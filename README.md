@@ -12,7 +12,8 @@ like chapters of one big game.
 | Quest Log — main/side/daily quests with bounties, deadlines, and streaks | `quest-log.html` | ✅ |
 | Character Sheet — invent your own attributes, train them with logged deeds | `character-sheet.html` | ✅ |
 | Skill Tree — branching milestone trees; master a node to unlock the next | `skill-tree.html` | ✅ |
-| Loot Box, Habit Streaks, … | — | planned |
+| Loot Box — spend earned gold on self-defined rewards, by shop or by chance | `loot-box.html` | ✅ |
+| Habit Streaks, Achievements, Year in Review, … | — | planned |
 
 Open any app file directly in a browser — no build step, no server, no
 dependencies. All progress is saved in the browser via `localStorage`.

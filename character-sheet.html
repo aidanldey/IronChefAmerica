@@ -186,6 +186,7 @@
     <a href="quest-log.html">📜 Quest Log</a>
     <a href="character-sheet.html" class="current">🛡 Character Sheet</a>
     <a href="skill-tree.html">🌳 Skill Tree</a>
+    <a href="loot-box.html">🎁 Loot Box</a>
   </nav>
 </header>
 
@@ -317,7 +318,7 @@
   const attrXpFor = (lvl) => 25 * (lvl - 1) ** 2;
   const renownXpFor = (lvl) => 50 * (lvl - 1) ** 2;
 
-  const APP_ICONS = { bossBattle: '⚔', questLog: '📜', characterSheet: '🛡', skillTree: '🌳' };
+  const APP_ICONS = { bossBattle: '⚔', questLog: '📜', characterSheet: '🛡', skillTree: '🌳', lootBox: '🎁' };
 
   let trainingId = null;
 
@@ -388,7 +389,8 @@
     $('#legend').innerHTML = LifeGame.history.slice(0, 25).map((h) => {
       const d = new Date(h.at);
       const when = `${d.getMonth() + 1}/${d.getDate()}`;
-      const gains = [h.gold ? `+${h.gold}g` : '', h.xp ? `+${h.xp}xp` : ''].filter(Boolean).join(', ');
+      const sign = (n, unit) => n ? `${n > 0 ? '+' : '−'}${Math.abs(n)}${unit}` : '';
+      const gains = [sign(h.gold, 'g'), sign(h.xp, 'xp')].filter(Boolean).join(', ');
       return `<li>※ ${when} ${APP_ICONS[h.app] || '❖'} ${esc(h.msg)}${gains ? ` (${gains})` : ''}</li>`;
     }).join('') || '<li>※ The legend is unwritten. Go do something worth telling.</li>';
   }

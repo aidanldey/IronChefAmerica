@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loot Box — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Loot Box–specific styling, on top of the shared design system. */
+
+    :root {
+      --rarity-common: #7a6a4f;
+      --rarity-rare: #2f5d3a;
+      --rarity-epic: #5b3b8c;
+      --rarity-legendary: #8a6d14;
+    }
+
+    .chest-court {
+      text-align: center;
+      padding: 0.6rem 0 1.1rem;
+      border-bottom: 2px solid var(--parchment-edge);
+      margin-bottom: 1rem;
+    }
+
+    .chest {
+      font-size: 5rem;
+      line-height: 1;
+      display: inline-block;
+      filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.45));
+    }
+
+    .chest-note {
+      font-style: italic;
+      font-size: 0.9rem;
+      color: var(--ink-faded);
+      margin: 0.4rem 0 0.7rem;
+    }
+
+    .chest-warning {
+      font-style: italic;
+      font-size: 0.9rem;
+      color: var(--blood);
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
+
+    .stall-list { list-style: none; }
+
+    .stall-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.55rem 0.2rem;
+      border-bottom: 1px dotted var(--parchment-edge);
+    }
+
+    .stall-icon { font-size: 1.6rem; width: 2rem; text-align: center; }
+
+    .stall-body { flex: 1; min-width: 0; }
+
+    .stall-name { overflow-wrap: break-word; }
+
+    .rarity-badge {
+      display: inline-block;
+      font-variant: small-caps;
+      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+      color: var(--parchment);
+      border-radius: 999px;
+      padding: 0.05rem 0.55rem;
+      margin-top: 0.15rem;
+    }
+
+    .rarity-common .rarity-badge { background: var(--rarity-common); }
+    .rarity-rare .rarity-badge { background: var(--rarity-rare); }
+    .rarity-epic .rarity-badge { background: var(--rarity-epic); }
+    .rarity-legendary .rarity-badge { background: var(--rarity-legendary); }
+
+    .price-tag {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      font-size: 0.9rem;
+      color: var(--gold-dark);
+      white-space: nowrap;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+      filter: grayscale(0.4);
+    }
+
+    .satchel-count {
+      font-variant: small-caps;
+      font-size: 0.85rem;
+      color: var(--ink-faded);
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 1.6rem 1rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+    .chip:disabled { opacity: 0.4; cursor: default; }
+
+    .satchel-title {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      text-align: center;
+      font-size: 1.05rem;
+      color: var(--ink-faded);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Reveal overlay */
+    .reveal-sigil {
+      font-size: 4.6rem;
+      line-height: 1;
+      display: inline-block;
+      animation: reveal-pop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+    }
+
+    @keyframes reveal-pop {
+      0% { transform: scale(0.2) rotate(-12deg); opacity: 0; }
+      70% { transform: scale(1.15) rotate(3deg); }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    .reveal-rarity {
+      font-variant: small-caps;
+      letter-spacing: 0.2em;
+      font-size: 1.05rem;
+      margin-top: 0.4rem;
+    }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter V · The Loot Box</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html">🛡 Character Sheet</a>
+    <a href="skill-tree.html">🌳 Skill Tree</a>
+    <a href="loot-box.html" class="current">🎁 Loot Box</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>The Satchel</h2>
+    <p class="rule-note">Treasures won and bought wait here. Redeem one when you enjoy it in the real world.</p>
+    <ul class="stall-list" id="satchel"></ul>
+
+    <hr class="section-divider">
+    <div class="satchel-title">Scribe a Treasure</div>
+    <p class="rule-note">Rewards are yours to invent — the rarer the tier, the dearer the price, the sweeter the pull.</p>
+    <div class="chip-row" id="starters"></div>
+    <form id="new-reward-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="reward-icon">Icon</label>
+          <input id="reward-icon" value="🎁" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="reward-name">Treasure</label>
+          <input id="reward-name" placeholder="An evening of guilt-free gaming" required maxlength="60">
+        </div>
+      </div>
+      <div class="field">
+        <label for="reward-rarity">Rarity</label>
+        <select id="reward-rarity"></select>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Add to the Hoard</button>
+    </form>
+  </aside>
+
+  <section class="panel">
+    <h2>The Marketplace</h2>
+
+    <div class="chest-court">
+      <span class="chest" id="chest">🎁</span>
+      <p class="chest-note">
+        The Loot Chest holds one treasure from your hoard, drawn by fate —
+        commons often, legends rarely.
+      </p>
+      <button class="btn" id="open-chest"></button>
+      <p class="chest-warning" id="chest-warning"></p>
+    </div>
+
+    <ul class="stall-list" id="stalls"></ul>
+  </section>
+
+</main>
+
+<div class="overlay" id="reveal-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" id="reveal-title" style="font-size: 1.6rem;">The Chest Opens…</div>
+    <span class="reveal-sigil" id="reveal-icon"></span>
+    <p id="reveal-name" style="margin-top: 0.5rem; font-size: 1.15rem;"></p>
+    <p class="reveal-rarity" id="reveal-rarity"></p>
+    <p class="reward-line" id="reveal-cost"></p>
+    <button class="btn" id="reveal-close">Into the Satchel</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('lootBox', () => ({ rewards: [], satchel: [] }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const CHEST_PRICE = 50;
+
+  const RARITY = {
+    common:    { label: 'Common',    weight: 60, price: 25,  color: 'var(--rarity-common)',    cry: 'A tidy find.' },
+    rare:      { label: 'Rare',      weight: 25, price: 75,  color: 'var(--rarity-rare)',      cry: 'A rare find!' },
+    epic:      { label: 'Epic',      weight: 12, price: 150, color: 'var(--rarity-epic)',      cry: 'An epic find!' },
+    legendary: { label: 'Legendary', weight: 3,  price: 300, color: 'var(--rarity-legendary)', cry: 'A LEGENDARY find!' },
+  };
+
+  const STARTERS = [
+    ['☕', 'A fancy coffee', 'common'],
+    ['🛁', 'A long uninterrupted bath', 'common'],
+    ['🍕', 'Takeout night', 'rare'],
+    ['🎮', 'Guilt-free gaming evening', 'rare'],
+    ['📺', 'A full series binge', 'epic'],
+    ['😴', 'A lazy Sunday, no chores', 'epic'],
+    ['🛍️', 'Treat-yourself purchase', 'legendary'],
+  ];
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderStalls() {
+    $('#open-chest').textContent = `Open the Chest — 🪙 ${CHEST_PRICE}`;
+    $('#open-chest').disabled = LifeGame.gold < CHEST_PRICE || !store.rewards.length;
+
+    if (!store.rewards.length) {
+      $('#stalls').innerHTML = `
+        <li class="empty-state">
+          The market stalls stand empty.<br>
+          Scribe some treasures — real rewards you'd actually enjoy —
+          and they'll be sold here (and hide inside the chest).
+        </li>`;
+      return;
+    }
+    $('#stalls').innerHTML = store.rewards.map((r) => {
+      const price = RARITY[r.rarity].price;
+      return `
+        <li class="stall-row rarity-${r.rarity}">
+          <span class="stall-icon">${esc(r.icon)}</span>
+          <div class="stall-body">
+            <div class="stall-name">${esc(r.name)}</div>
+            <span class="rarity-badge">${RARITY[r.rarity].label}</span>
+          </div>
+          <span class="price-tag">🪙 ${price}</span>
+          <button class="btn" data-buy="${r.id}" ${LifeGame.gold < price ? 'disabled' : ''}>Buy</button>
+          <button class="btn btn-ghost" data-remove="${r.id}" title="Remove from hoard">✕</button>
+        </li>`;
+    }).join('');
+  }
+
+  function groupedSatchel() {
+    const groups = new Map();
+    for (const item of store.satchel) {
+      const key = `${item.name}|${item.icon}|${item.rarity}`;
+      if (!groups.has(key)) groups.set(key, { ...item, count: 0 });
+      groups.get(key).count += 1;
+    }
+    return [...groups.values()];
+  }
+
+  function renderSatchel() {
+    const groups = groupedSatchel();
+    $('#satchel').innerHTML = groups.map((g) => `
+      <li class="stall-row rarity-${g.rarity}">
+        <span class="stall-icon">${esc(g.icon)}</span>
+        <div class="stall-body">
+          <div class="stall-name">${esc(g.name)}</div>
+          <span class="rarity-badge">${RARITY[g.rarity].label}</span>
+        </div>
+        ${g.count > 1 ? `<span class="satchel-count">× ${g.count}</span>` : ''}
+        <button class="btn" data-redeem="${esc(g.name)}|${esc(g.icon)}|${g.rarity}">Redeem</button>
+      </li>`).join('')
+      || '<li class="empty-state" style="padding: 0.8rem;">The satchel hangs light and empty.</li>';
+
+    const taken = new Set(store.rewards.map((r) => r.name.toLowerCase()));
+    $('#starters').innerHTML = STARTERS.map(([icon, name, rarity]) => `
+      <button class="chip" data-starter-name="${esc(name)}" data-starter-icon="${esc(icon)}"
+        data-starter-rarity="${rarity}" ${taken.has(name.toLowerCase()) ? 'disabled' : ''}>
+        ${icon} ${esc(name)}</button>`).join('');
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderStalls();
+    renderSatchel();
+  }
+
+  function addReward(name, icon, rarity) {
+    if (store.rewards.some((r) => r.name.toLowerCase() === name.toLowerCase())) return;
+    store.rewards.push({ id: uid(), name, icon: icon || '🎁', rarity });
+    LifeGame.save();
+    renderAll();
+  }
+
+  function pocket(reward) {
+    store.satchel.unshift({ id: uid(), name: reward.name, icon: reward.icon, rarity: reward.rarity, at: Date.now() });
+  }
+
+  function reveal(reward, costMsg, title) {
+    const r = RARITY[reward.rarity];
+    $('#reveal-title').textContent = title;
+    $('#reveal-icon').textContent = reward.icon;
+    // Restart the pop animation on repeat reveals
+    const sigil = $('#reveal-icon');
+    sigil.style.animation = 'none';
+    void sigil.offsetWidth;
+    sigil.style.animation = '';
+    $('#reveal-name').textContent = reward.name;
+    $('#reveal-rarity').textContent = r.cry;
+    $('#reveal-rarity').style.color = r.color;
+    $('#reveal-title').style.color = r.color;
+    $('#reveal-cost').textContent = costMsg;
+    $('#reveal-overlay').hidden = false;
+  }
+
+  function rollChest() {
+    const total = store.rewards.reduce((sum, r) => sum + RARITY[r.rarity].weight, 0);
+    let roll = Math.random() * total;
+    for (const r of store.rewards) {
+      roll -= RARITY[r.rarity].weight;
+      if (roll <= 0) return r;
+    }
+    return store.rewards[store.rewards.length - 1];
+  }
+
+  $('#new-reward-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#reward-name').value.trim();
+    if (!name) return;
+    addReward(name, $('#reward-icon').value.trim(), $('#reward-rarity').value);
+    $('#reward-name').value = '';
+    $('#reward-icon').value = '🎁';
+  });
+
+  $('#open-chest').addEventListener('click', () => {
+    $('#chest-warning').textContent = '';
+    if (!store.rewards.length) return;
+    if (!LifeGame.spend('lootBox', 'Opened the Loot Chest', CHEST_PRICE)) {
+      $('#chest-warning').textContent = 'Your purse is too light for the chest.';
+      return;
+    }
+    const chest = $('#chest');
+    chest.classList.remove('quake');
+    void chest.offsetWidth;
+    chest.classList.add('quake');
+    const prize = rollChest();
+    pocket(prize);
+    LifeGame.save();
+    setTimeout(() => {
+      reveal(prize, `−${CHEST_PRICE} gold`, 'The Chest Opens…');
+      renderAll();
+    }, 420);
+    renderPurse();
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    if (btn.dataset.starterName) {
+      addReward(btn.dataset.starterName, btn.dataset.starterIcon, btn.dataset.starterRarity);
+    } else if (btn.dataset.buy) {
+      const r = store.rewards.find((x) => x.id === btn.dataset.buy);
+      if (r && LifeGame.spend('lootBox', `Bought: ${r.name}`, RARITY[r.rarity].price)) {
+        pocket(r);
+        LifeGame.save();
+        reveal(r, `−${RARITY[r.rarity].price} gold`, 'A Fair Bargain');
+        renderAll();
+      }
+    } else if (btn.dataset.remove) {
+      const r = store.rewards.find((x) => x.id === btn.dataset.remove);
+      if (r && confirm(`Strike “${r.name}” from the hoard? Copies in the satchel remain.`)) {
+        store.rewards = store.rewards.filter((x) => x.id !== btn.dataset.remove);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.dataset.redeem) {
+      const [name, icon, rarity] = btn.dataset.redeem.split('|');
+      const idx = store.satchel.findIndex((s) => s.name === name && s.icon === icon && s.rarity === rarity);
+      if (idx >= 0) {
+        store.satchel.splice(idx, 1);
+        LifeGame.award('lootBox', `Redeemed: ${name}`, {});
+        renderAll();
+      }
+    } else if (btn.id === 'reveal-close') {
+      $('#reveal-overlay').hidden = true;
+    }
+  });
+
+  $('#reward-rarity').innerHTML = Object.entries(RARITY).map(([key, r]) =>
+    `<option value="${key}">${r.label} — 🪙 ${r.price}</option>`).join('');
+
+  renderAll();
+</script>
+
+</body>
+</html>

@@ -40,6 +40,16 @@ const LifeGame = (() => {
     save();
   }
 
+  // Deducts gold if the purse can afford it; returns false otherwise.
+  function spend(app, msg, gold) {
+    if (gold > state.gold) return false;
+    state.gold -= gold;
+    state.history.unshift({ at: Date.now(), app, msg, gold: -gold, xp: 0 });
+    state.history.length = Math.min(state.history.length, 200);
+    save();
+    return true;
+  }
+
   // Returns the app's namespaced state, seeding it on first use.
   function app(id, seed) {
     if (!state.apps[id]) {
@@ -52,6 +62,7 @@ const LifeGame = (() => {
   return {
     save,
     award,
+    spend,
     app,
     level,
     get gold() { return state.gold; },
