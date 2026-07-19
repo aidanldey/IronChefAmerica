@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skill Tree — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Skill Tree–specific styling, on top of the shared design system. */
+
+    .grove-list { list-style: none; }
+
+    .grove-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 0.45rem 0.5rem;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .grove-row:hover { border-color: var(--gold-dark); }
+
+    .grove-row.active {
+      border-color: var(--parchment-edge);
+      background: rgba(90, 61, 30, 0.12);
+    }
+
+    .grove-row .mini-progress {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--ink-faded);
+      white-space: nowrap;
+    }
+
+    .grove-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1rem 0 0.9rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+      justify-content: center;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    /* The tree canvas scrolls sideways when a tree grows broad. */
+    .tree-scroll {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+
+    .tree-svg { display: block; margin: 0 auto; }
+
+    .tree-svg .branch {
+      fill: none;
+      stroke: var(--parchment-edge);
+      stroke-width: 2.5;
+    }
+
+    .tree-svg .branch.branch-done { stroke: var(--gold-dark); stroke-width: 3; }
+    .tree-svg .branch.branch-locked { stroke-dasharray: 5 5; opacity: 0.55; }
+
+    .tree-svg .node { cursor: pointer; }
+
+    .tree-svg .node circle {
+      fill: #ead9b0;
+      stroke: var(--parchment-edge);
+      stroke-width: 2.5;
+    }
+
+    .tree-svg .node-done circle {
+      fill: url(#gold-grad);
+      stroke: var(--gold-dark);
+    }
+
+    .tree-svg .node-avail circle {
+      stroke: var(--gold);
+      stroke-width: 3.5;
+      animation: beckon 1.6s ease-in-out infinite;
+    }
+
+    @keyframes beckon {
+      0%, 100% { stroke-opacity: 1; }
+      50% { stroke-opacity: 0.35; }
+    }
+
+    .tree-svg .node-locked { opacity: 0.45; }
+    .tree-svg .node-locked circle { fill: #d6c49a; }
+
+    .tree-svg .node-icon {
+      font-size: 22px;
+      text-anchor: middle;
+      dominant-baseline: central;
+      user-select: none;
+    }
+
+    .tree-svg .node-label {
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      font-variant: small-caps;
+      letter-spacing: 0.04em;
+      fill: var(--ink);
+      text-anchor: middle;
+      user-select: none;
+    }
+
+    .tree-svg .node-locked .node-label { fill: var(--ink-faded); }
+
+    .add-node-form { margin-top: 0.4rem; }
+
+    .section-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+
+    .overlay-status {
+      font-style: italic;
+      color: var(--ink-faded);
+      margin: 0.4rem 0 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter IV · The Skill Tree</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html">🛡 Character Sheet</a>
+    <a href="skill-tree.html" class="current">🌳 Skill Tree</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>The Grove</h2>
+    <p class="rule-note">Each tree is a discipline. Master the root, and the branches above it unfurl.</p>
+    <ul class="grove-list" id="grove"></ul>
+    <hr class="grove-divider">
+    <div class="chip-row" id="templates"></div>
+    <form id="new-tree-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="tree-icon">Icon</label>
+          <input id="tree-icon" value="🌳" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="tree-name">New discipline</label>
+          <input id="tree-name" placeholder="The Gardener's Way" required maxlength="40">
+        </div>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Plant the Tree</button>
+    </form>
+  </aside>
+
+  <section class="panel">
+    <h2>The Tree</h2>
+    <div id="canvas"></div>
+    <div id="editor"></div>
+  </section>
+
+</main>
+
+<div class="overlay" id="node-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="font-size: 1.4rem;" id="node-title"></div>
+    <div class="overlay-sigil" id="node-icon"></div>
+    <p class="overlay-status" id="node-status"></p>
+    <p class="reward-line" id="node-reward"></p>
+    <div>
+      <button class="btn" id="node-complete" hidden>Master It</button>
+      <button class="btn btn-danger" id="node-prune" hidden>Prune</button>
+      <button class="btn btn-ghost" id="node-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="mastered-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="color: var(--forest);">✦ Mastered ✦</div>
+    <div class="overlay-sigil" id="mastered-icon"></div>
+    <p id="mastered-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="mastered-reward"></p>
+    <button class="btn" id="mastered-close">The Tree Grows</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('skillTree', () => ({ trees: [], activeId: null }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  // Templates seed an editable example tree; '' parent means a root node.
+  // Rows: [key, name, icon, parentKey, xp]
+  const TEMPLATES = {
+    runner: {
+      name: "The Runner's Path", icon: '🏃',
+      nodes: [
+        ['a', 'Walk 10k steps', '👟', '', 25],
+        ['b', 'Jog one mile', '🏃', 'a', 25],
+        ['c', 'Run a 5k', '🎽', 'b', 50],
+        ['d', 'Run a 10k', '🏅', 'c', 75],
+        ['e', 'Trail run', '⛰️', 'c', 50],
+        ['f', 'Half marathon', '👑', 'd', 150],
+      ],
+    },
+    scholar: {
+      name: "The Scholar's Path", icon: '📚',
+      nodes: [
+        ['a', 'Read 15 min daily', '📖', '', 25],
+        ['b', 'Finish one book', '📕', 'a', 50],
+        ['c', 'Join a book club', '🗣️', 'b', 50],
+        ['d', 'Write a review', '✍️', 'b', 50],
+        ['e', 'Read a classic', '🏛️', 'd', 75],
+      ],
+    },
+  };
+
+  const activeTree = () => store.trees.find((t) => t.id === store.activeId) || null;
+  const childrenOf = (tree, id) => tree.nodes.filter((n) => n.parentId === id);
+  const nodeById = (tree, id) => tree.nodes.find((n) => n.id === id);
+
+  function nodeState(tree, node) {
+    if (node.done) return 'done';
+    if (!node.parentId || nodeById(tree, node.parentId)?.done) return 'avail';
+    return 'locked';
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderGrove() {
+    $('#grove').innerHTML = store.trees.map((t) => {
+      const done = t.nodes.filter((n) => n.done).length;
+      return `
+        <li>
+          <button class="grove-row ${t.id === store.activeId ? 'active' : ''}" data-select="${t.id}">
+            <span>${esc(t.icon)}</span>
+            <span>${esc(t.name)}</span>
+            <span class="mini-progress">${done}/${t.nodes.length}</span>
+          </button>
+        </li>`;
+    }).join('') || '<li class="empty-state" style="padding: 0.8rem;">The grove stands unplanted.</li>';
+
+    $('#templates').innerHTML = Object.entries(TEMPLATES).map(([key, t]) =>
+      `<button class="chip" data-template="${key}">${t.icon} ${esc(t.name)}</button>`).join('');
+  }
+
+  /* Tidy-tree layout: leaves get sequential columns, parents sit centered
+     over their children. Returns {id: {col, depth}} plus overall size. */
+  function layoutTree(tree) {
+    const pos = {};
+    let cursor = 0;
+    let maxDepth = 0;
+    function place(node, depth) {
+      maxDepth = Math.max(maxDepth, depth);
+      const kids = childrenOf(tree, node.id);
+      if (!kids.length) {
+        pos[node.id] = { col: cursor++, depth };
+      } else {
+        const cols = kids.map((k) => place(k, depth + 1));
+        pos[node.id] = { col: (Math.min(...cols) + Math.max(...cols)) / 2, depth };
+      }
+      return pos[node.id].col;
+    }
+    childrenOf(tree, '').forEach((root) => place(root, 0));
+    return { pos, cols: Math.max(cursor, 1), depths: maxDepth + 1 };
+  }
+
+  function wrapLabel(name) {
+    const words = String(name).split(' ');
+    let lines = [];
+    let cur = '';
+    for (const w of words) {
+      if (cur && (cur + ' ' + w).length > 15) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+    if (lines.length > 2) { lines = lines.slice(0, 2); lines[1] += '…'; }
+    return lines;
+  }
+
+  function renderCanvas() {
+    const tree = activeTree();
+    if (!tree) {
+      $('#canvas').innerHTML = `
+        <div class="empty-state">
+          No tree stands here.<br>
+          Plant a discipline in the grove — start from a template,
+          or grow your own from a single root.
+        </div>`;
+      $('#editor').innerHTML = '';
+      return;
+    }
+    if (!tree.nodes.length) {
+      $('#canvas').innerHTML = `
+        <div class="empty-state">
+          ${esc(tree.icon)} ${esc(tree.name)} is a bare sapling.<br>
+          Add its root below — the first milestone on this path.
+        </div>`;
+      renderEditor(tree);
+      return;
+    }
+
+    const COL_W = 130, ROW_H = 118, PAD = 40, R = 27;
+    const { pos, cols, depths } = layoutTree(tree);
+    const width = cols * COL_W + PAD * 2 - (COL_W - 2 * R);
+    const height = depths * ROW_H + PAD;
+    const cx = (id) => PAD + R + pos[id].col * COL_W;
+    const cy = (id) => PAD + pos[id].depth * ROW_H;
+
+    const branches = tree.nodes.filter((n) => n.parentId).map((n) => {
+      const state = nodeState(tree, n);
+      const x1 = cx(n.parentId), y1 = cy(n.parentId) + R;
+      const x2 = cx(n.id), y2 = cy(n.id) - R;
+      const cls = state === 'done' ? 'branch-done' : state === 'locked' ? 'branch-locked' : '';
+      return `<path class="branch ${cls}" d="M ${x1} ${y1} C ${x1} ${y1 + 42}, ${x2} ${y2 - 42}, ${x2} ${y2}"/>`;
+    }).join('');
+
+    const nodes = tree.nodes.map((n) => {
+      const state = nodeState(tree, n);
+      const label = wrapLabel(n.name).map((line, i) =>
+        `<tspan x="${cx(n.id)}" dy="${i ? 14 : 0}">${esc(line)}</tspan>`).join('');
+      return `
+        <g class="node node-${state}" data-node="${n.id}">
+          <circle cx="${cx(n.id)}" cy="${cy(n.id)}" r="${R}"/>
+          <text class="node-icon" x="${cx(n.id)}" y="${cy(n.id)}">${state === 'locked' ? '🔒' : esc(n.icon)}</text>
+          <text class="node-label" x="${cx(n.id)}" y="${cy(n.id) + R + 16}">${label}</text>
+        </g>`;
+    }).join('');
+
+    $('#canvas').innerHTML = `
+      <div class="tree-scroll">
+        <svg class="tree-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+          <defs>
+            <linearGradient id="gold-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#e8c95a"/>
+              <stop offset="0.6" stop-color="#c9a227"/>
+              <stop offset="1" stop-color="#8a6d14"/>
+            </linearGradient>
+          </defs>
+          ${branches}
+          ${nodes}
+        </svg>
+      </div>`;
+    renderEditor(tree);
+  }
+
+  function renderEditor(tree) {
+    const options = tree.nodes.map((n) =>
+      `<option value="${n.id}">${esc(n.icon)} ${esc(n.name)}</option>`).join('');
+    $('#editor').innerHTML = `
+      <hr class="section-divider">
+      <form class="add-node-form" id="new-node-form">
+        <div class="field-row">
+          <div class="field" style="flex: 0 0 4.5rem;">
+            <label for="node-new-icon">Icon</label>
+            <input id="node-new-icon" value="🌿" maxlength="4">
+          </div>
+          <div class="field">
+            <label for="node-new-name">New milestone</label>
+            <input id="node-new-name" placeholder="Run a 5k" required maxlength="60">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="node-new-parent">Grows from</label>
+            <select id="node-new-parent">
+              <option value="">— the ground (a new root) —</option>
+              ${options}
+            </select>
+          </div>
+          <div class="field" style="flex: 0 0 6.5rem;">
+            <label for="node-new-xp">XP reward</label>
+            <input id="node-new-xp" type="number" value="25" min="1" max="9999" required>
+          </div>
+        </div>
+        <button class="btn" type="submit">Graft the Branch</button>
+        <button class="btn btn-ghost" type="button" data-fell="${tree.id}" style="float: right;">Fell This Tree</button>
+      </form>`;
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderGrove();
+    renderCanvas();
+  }
+
+  let inspectedId = null;
+
+  function openNode(tree, node) {
+    inspectedId = node.id;
+    const state = nodeState(tree, node);
+    const isLeaf = !childrenOf(tree, node.id).length;
+    $('#node-title').textContent = node.name;
+    $('#node-icon').textContent = state === 'locked' ? '🔒' : node.icon;
+    $('#node-reward').textContent = `+${node.xp} xp`;
+    $('#node-complete').hidden = state !== 'avail';
+    $('#node-prune').hidden = !isLeaf;
+    $('#node-status').textContent =
+      state === 'done' ? 'Mastered. This branch bears fruit.'
+      : state === 'avail' ? 'Within reach. Claim it when the deed is done in the real world.'
+      : `Locked. First master “${nodeById(tree, node.parentId)?.name}”.`;
+    $('#node-overlay').hidden = false;
+  }
+
+  $('#new-tree-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#tree-name').value.trim();
+    if (!name) return;
+    const tree = { id: uid(), name, icon: $('#tree-icon').value.trim() || '🌳', nodes: [] };
+    store.trees.unshift(tree);
+    store.activeId = tree.id;
+    LifeGame.save();
+    e.target.reset();
+    $('#tree-icon').value = '🌳';
+    renderAll();
+  });
+
+  document.addEventListener('submit', (e) => {
+    if (e.target.id !== 'new-node-form') return;
+    e.preventDefault();
+    const tree = activeTree();
+    if (!tree) return;
+    const name = $('#node-new-name').value.trim();
+    if (!name) return;
+    tree.nodes.push({
+      id: uid(),
+      name,
+      icon: $('#node-new-icon').value.trim() || '🌿',
+      parentId: $('#node-new-parent').value,
+      xp: Math.max(1, parseInt($('#node-new-xp').value, 10) || 1),
+      done: false,
+    });
+    LifeGame.save();
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const nodeEl = e.target.closest('[data-node]');
+    if (nodeEl) {
+      const tree = activeTree();
+      const node = tree && nodeById(tree, nodeEl.dataset.node);
+      if (node) openNode(tree, node);
+      return;
+    }
+
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const tree = activeTree();
+
+    if (btn.dataset.select) {
+      store.activeId = btn.dataset.select;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.template) {
+      const t = TEMPLATES[btn.dataset.template];
+      const ids = {};
+      t.nodes.forEach(([key]) => { ids[key] = uid(); });
+      store.trees.unshift({
+        id: uid(),
+        name: t.name,
+        icon: t.icon,
+        nodes: t.nodes.map(([key, name, icon, parentKey, xp]) =>
+          ({ id: ids[key], name, icon, parentId: parentKey ? ids[parentKey] : '', xp, done: false })),
+      });
+      store.activeId = store.trees[0].id;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.fell) {
+      const target = store.trees.find((t) => t.id === btn.dataset.fell);
+      if (target && confirm(`Fell ${target.name}? Every branch and its progress will be lost.`)) {
+        store.trees = store.trees.filter((t) => t.id !== btn.dataset.fell);
+        if (store.activeId === btn.dataset.fell) store.activeId = store.trees[0]?.id ?? null;
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'node-complete' && tree) {
+      const node = nodeById(tree, inspectedId);
+      if (node && nodeState(tree, node) === 'avail') {
+        node.done = true;
+        LifeGame.award('skillTree', `Mastered ${node.name} (${tree.name})`, { xp: node.xp });
+        $('#node-overlay').hidden = true;
+        $('#mastered-icon').textContent = node.icon;
+        $('#mastered-text').textContent = `“${node.name}” is yours. New branches beckon above.`;
+        $('#mastered-reward').textContent = `+${node.xp} xp`;
+        $('#mastered-overlay').hidden = false;
+        renderAll();
+      }
+    } else if (btn.id === 'node-prune' && tree) {
+      const node = nodeById(tree, inspectedId);
+      if (node && !childrenOf(tree, node.id).length
+          && confirm(`Prune “${node.name}” from the tree?`)) {
+        tree.nodes = tree.nodes.filter((n) => n.id !== inspectedId);
+        LifeGame.save();
+        $('#node-overlay').hidden = true;
+        renderAll();
+      }
+    } else if (btn.id === 'node-close') {
+      $('#node-overlay').hidden = true;
+    } else if (btn.id === 'mastered-close') {
+      $('#mastered-overlay').hidden = true;
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

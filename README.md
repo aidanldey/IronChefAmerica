@@ -11,7 +11,8 @@ like chapters of one big game.
 | Boss Battle — render a big goal as a boss; each sub-task dealt as damage | `boss-battle.html` | ✅ |
 | Quest Log — main/side/daily quests with bounties, deadlines, and streaks | `quest-log.html` | ✅ |
 | Character Sheet — invent your own attributes, train them with logged deeds | `character-sheet.html` | ✅ |
-| Loot Box, Skill Tree, Habit Streaks, … | — | planned |
+| Skill Tree — branching milestone trees; master a node to unlock the next | `skill-tree.html` | ✅ |
+| Loot Box, Habit Streaks, … | — | planned |
 
 Open any app file directly in a browser — no build step, no server, no
 dependencies. All progress is saved in the browser via `localStorage`.
