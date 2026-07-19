@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LifeQuest — shared design system
+   DrivenQuest — shared design system
    Classic fantasy board-game look: dark wood table, parchment panels,
    gold trim, blood-red vitality bars. Every app page links this file so
    the whole site reads as one game.
@@ -78,6 +78,31 @@ body {
   font-variant: small-caps;
   letter-spacing: 0.08em;
   color: var(--gold-bright);
+}
+
+.site-nav {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.6rem;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  font-size: 0.95rem;
+}
+
+.site-nav a {
+  color: var(--parchment-dark);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+}
+
+.site-nav a:hover { color: var(--gold-bright); }
+
+.site-nav a.current {
+  color: var(--gold-bright);
+  border-bottom-color: var(--gold-dark);
 }
 
 .layout {
@@ -203,7 +228,8 @@ body {
   margin-bottom: 0.2rem;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   font-family: var(--font-body);
   font-size: 1rem;
@@ -214,7 +240,8 @@ body {
   padding: 0.4rem 0.55rem;
 }
 
-.field input:focus {
+.field input:focus,
+.field select:focus {
   outline: 2px solid var(--gold);
   outline-offset: 1px;
 }

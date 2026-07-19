@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest Log — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Quest Log–specific styling, on top of the shared design system. */
+
+    .quest-section { margin-bottom: 1.3rem; }
+
+    .quest-section h3 {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      font-size: 1.05rem;
+      color: var(--ink-faded);
+      border-bottom: 1px solid var(--parchment-edge);
+      padding-bottom: 0.25rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .quest-list { list-style: none; }
+
+    .quest-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.55rem 0.2rem;
+      border-bottom: 1px dotted var(--parchment-edge);
+    }
+
+    .quest-icon { font-size: 1.3rem; }
+
+    .quest-body { flex: 1; min-width: 0; }
+
+    .quest-name { overflow-wrap: break-word; }
+
+    .quest-meta {
+      font-size: 0.82rem;
+      color: var(--ink-faded);
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+    }
+
+    .quest-meta .overdue {
+      color: var(--blood);
+      font-weight: bold;
+    }
+
+    .quest-meta .streak { color: var(--blood-bright); }
+
+    .quest-row.resting .quest-name {
+      color: var(--ink-faded);
+    }
+
+    .rest-note {
+      font-style: italic;
+      font-size: 0.88rem;
+      color: var(--forest);
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .chronicle-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .chronicle-title {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      text-align: center;
+      font-size: 1.05rem;
+      color: var(--ink-faded);
+      margin-bottom: 0.5rem;
+    }
+
+    .chronicle-list {
+      list-style: none;
+      max-height: 220px;
+      overflow-y: auto;
+      font-size: 0.86rem;
+      font-style: italic;
+      color: var(--ink-faded);
+    }
+
+    .chronicle-list li { padding: 0.18rem 0; }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter II · The Quest Log</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html" class="current">📜 Quest Log</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>Scribe a Quest</h2>
+    <p class="rule-note">Main quests shape your saga, side quests fill your purse, daily quests forge your discipline.</p>
+    <form id="new-quest-form">
+      <div class="field">
+        <label for="quest-name">Quest</label>
+        <input id="quest-name" placeholder="Deliver the grant proposal to the council" required maxlength="100">
+      </div>
+      <div class="field">
+        <label for="quest-type">Kind</label>
+        <select id="quest-type">
+          <option value="main">⚔ Main Quest</option>
+          <option value="side">🗺 Side Quest</option>
+          <option value="daily">🔁 Daily Quest</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="quest-gold">Gold</label>
+          <input id="quest-gold" type="number" value="100" min="0" max="99999" required>
+        </div>
+        <div class="field">
+          <label for="quest-xp">XP</label>
+          <input id="quest-xp" type="number" value="150" min="0" max="99999" required>
+        </div>
+      </div>
+      <div class="field" id="due-field">
+        <label for="quest-due">Complete by (optional)</label>
+        <input id="quest-due" type="date">
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Post to the Board</button>
+    </form>
+
+    <hr class="chronicle-divider">
+    <div class="chronicle-title">Chronicle of Deeds</div>
+    <ul class="chronicle-list" id="chronicle"></ul>
+  </aside>
+
+  <section class="panel">
+    <h2>The Quest Board</h2>
+    <div id="board"></div>
+  </section>
+
+</main>
+
+<div class="overlay" id="complete-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title">✦ Quest Complete ✦</div>
+    <div class="overlay-sigil">🏆</div>
+    <p id="complete-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="complete-reward"></p>
+    <button class="btn" id="complete-close">Onward</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('questLog', () => ({ quests: [], chronicle: [] }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const TYPES = {
+    main:  { icon: '⚔', title: 'Main Quests',  gold: 100, xp: 150 },
+    side:  { icon: '🗺', title: 'Side Quests',  gold: 25,  xp: 30 },
+    daily: { icon: '🔁', title: 'Daily Quests', gold: 10,  xp: 15 },
+  };
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function dayDiff(from, to) {
+    return Math.round((new Date(to) - new Date(from)) / 86400000);
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function questRow(q) {
+    const today = todayStr();
+    const restingToday = q.type === 'daily' && q.lastDone === today;
+    const overdue = q.type !== 'daily' && q.due && q.due < today;
+
+    const meta = [];
+    if (q.gold || q.xp) meta.push(`🪙 ${q.gold} · ✦ ${q.xp} xp`);
+    if (q.type !== 'daily' && q.due) {
+      meta.push(overdue ? `<span class="overdue">expired ${esc(q.due)}</span>` : `by ${esc(q.due)}`);
+    }
+    if (q.type === 'daily' && q.streak > 1) meta.push(`<span class="streak">🔥 ${q.streak}-day streak</span>`);
+
+    return `
+      <li class="quest-row ${restingToday ? 'resting' : ''}">
+        <span class="quest-icon">${TYPES[q.type].icon}</span>
+        <div class="quest-body">
+          <div class="quest-name">${esc(q.name)}</div>
+          <div class="quest-meta">${meta.join(' · ')}</div>
+        </div>
+        ${restingToday
+          ? '<span class="rest-note">done today ✓</span>'
+          : `<button class="btn" data-complete="${q.id}">Complete</button>`}
+        <button class="btn btn-ghost" data-abandon="${q.id}" title="Abandon quest">✕</button>
+      </li>`;
+  }
+
+  function renderBoard() {
+    if (!store.quests.length) {
+      $('#board').innerHTML = `
+        <div class="empty-state">
+          The board hangs bare.<br>
+          Scribe a quest — a deadline to slay, an errand to run, a habit to keep —
+          and pin it here for all the realm to see.
+        </div>`;
+      return;
+    }
+    $('#board').innerHTML = Object.keys(TYPES).map((type) => {
+      const quests = store.quests.filter((q) => q.type === type);
+      if (!quests.length) return '';
+      return `
+        <div class="quest-section">
+          <h3>${TYPES[type].icon} ${TYPES[type].title}</h3>
+          <ul class="quest-list">${quests.map(questRow).join('')}</ul>
+        </div>`;
+    }).join('');
+  }
+
+  function renderChronicle() {
+    $('#chronicle').innerHTML = store.chronicle.map((c) => `
+      <li>※ ${esc(c.when)} — ${TYPES[c.type].icon} ${esc(c.name)} (+${c.gold}g, +${c.xp}xp)</li>`).join('')
+      || '<li>※ No deeds yet recorded.</li>';
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderBoard();
+    renderChronicle();
+  }
+
+  function chronicle(q) {
+    store.chronicle.unshift({ when: todayStr(), name: q.name, type: q.type, gold: q.gold, xp: q.xp });
+    store.chronicle.length = Math.min(store.chronicle.length, 30);
+  }
+
+  function complete(q) {
+    const today = todayStr();
+    if (q.type === 'daily') {
+      if (q.lastDone === today) return;
+      q.streak = q.lastDone && dayDiff(q.lastDone, today) === 1 ? (q.streak || 0) + 1 : 1;
+      q.lastDone = today;
+      LifeGame.award('questLog', `Daily quest kept: ${q.name}`, { gold: q.gold, xp: q.xp });
+    } else {
+      store.quests = store.quests.filter((x) => x.id !== q.id);
+      LifeGame.award('questLog', `Quest complete: ${q.name}`, { gold: q.gold, xp: q.xp });
+      if (q.type === 'main') {
+        $('#complete-text').textContent = `“${q.name}” is done. The bards will sing of it.`;
+        $('#complete-reward').textContent = `+${q.gold} gold · +${q.xp} xp`;
+        $('#complete-overlay').hidden = false;
+      }
+    }
+    chronicle(q);
+    LifeGame.save();
+  }
+
+  // Suggest sensible bounty defaults whenever the quest kind changes.
+  $('#quest-type').addEventListener('change', () => {
+    const t = TYPES[$('#quest-type').value];
+    $('#quest-gold').value = t.gold;
+    $('#quest-xp').value = t.xp;
+    $('#due-field').style.display = $('#quest-type').value === 'daily' ? 'none' : '';
+  });
+
+  $('#new-quest-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#quest-name').value.trim();
+    if (!name) return;
+    const type = $('#quest-type').value;
+    store.quests.push({
+      id: uid(),
+      name,
+      type,
+      gold: Math.max(0, parseInt($('#quest-gold').value, 10) || 0),
+      xp: Math.max(0, parseInt($('#quest-xp').value, 10) || 0),
+      due: type === 'daily' ? '' : $('#quest-due').value,
+      streak: 0,
+      lastDone: '',
+    });
+    LifeGame.save();
+    $('#quest-name').value = '';
+    $('#quest-due').value = '';
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    if (btn.dataset.complete) {
+      const q = store.quests.find((x) => x.id === btn.dataset.complete);
+      if (q) {
+        complete(q);
+        renderAll();
+      }
+    } else if (btn.dataset.abandon) {
+      const q = store.quests.find((x) => x.id === btn.dataset.abandon);
+      if (q && confirm(`Abandon “${q.name}”? It will vanish from the board unrewarded.`)) {
+        store.quests = store.quests.filter((x) => x.id !== btn.dataset.abandon);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'complete-close') {
+      $('#complete-overlay').hidden = true;
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

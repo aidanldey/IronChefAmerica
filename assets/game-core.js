@@ -1,4 +1,4 @@
-/* LifeQuest shared game state.
+/* DrivenQuest shared game state.
  *
  * Every app page loads this and reads/writes the same localStorage blob,
  * so gold and XP earned in one app (a slain boss, a finished quest) are
@@ -6,7 +6,7 @@
  * so apps never trample each other.
  */
 const LifeGame = (() => {
-  const KEY = 'lifequest.state.v1';
+  const KEY = 'drivenquest.state.v1';
 
   const defaults = () => ({
     version: 1,
