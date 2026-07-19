@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Map — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* World Map–specific styling, on top of the shared design system. */
+
+    .atlas-list { list-style: none; }
+
+    .atlas-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 0.45rem 0.5rem;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .atlas-row:hover { border-color: var(--gold-dark); }
+
+    .atlas-row.active {
+      border-color: var(--parchment-edge);
+      background: rgba(90, 61, 30, 0.12);
+    }
+
+    .atlas-row .mini-progress {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--ink-faded);
+      white-space: nowrap;
+    }
+
+    .atlas-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1rem 0 0.9rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+      justify-content: center;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .map-scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+
+    .map-svg { display: block; margin: 0 auto; }
+
+    .map-svg .terrain {
+      font-size: 20px;
+      text-anchor: middle;
+      opacity: 0.3;
+      user-select: none;
+    }
+
+    .map-svg .trail {
+      fill: none;
+      stroke: var(--parchment-edge);
+      stroke-width: 3;
+      stroke-dasharray: 7 7;
+      opacity: 0.7;
+    }
+
+    .map-svg .trail-traveled {
+      stroke: var(--gold-dark);
+      stroke-dasharray: none;
+      opacity: 1;
+    }
+
+    .map-svg .wp { cursor: pointer; }
+
+    .map-svg .wp circle {
+      fill: #ead9b0;
+      stroke: var(--parchment-edge);
+      stroke-width: 2.5;
+    }
+
+    .map-svg .wp-home circle { fill: #e2cf9f; stroke-width: 3; }
+
+    .map-svg .wp-done circle {
+      fill: url(#gold-grad);
+      stroke: var(--gold-dark);
+    }
+
+    .map-svg .wp-next circle {
+      stroke: var(--gold);
+      stroke-width: 3.5;
+      animation: beckon 1.6s ease-in-out infinite;
+    }
+
+    @keyframes beckon {
+      0%, 100% { stroke-opacity: 1; }
+      50% { stroke-opacity: 0.35; }
+    }
+
+    .map-svg .wp-fog circle {
+      fill: #d6c49a;
+      stroke-dasharray: 4 4;
+      opacity: 0.6;
+    }
+
+    .map-svg .wp-fog .wp-icon,
+    .map-svg .wp-fog .wp-label { opacity: 0.65; }
+
+    .map-svg .wp-icon {
+      font-size: 21px;
+      text-anchor: middle;
+      dominant-baseline: central;
+      user-select: none;
+    }
+
+    .map-svg .wp-label {
+      font-family: var(--font-body);
+      font-size: 12.5px;
+      font-variant: small-caps;
+      letter-spacing: 0.04em;
+      fill: var(--ink);
+      text-anchor: middle;
+      user-select: none;
+    }
+
+    .map-svg .wp-fog .wp-label { font-style: italic; fill: var(--ink-faded); }
+
+    .map-svg .token {
+      font-size: 24px;
+      text-anchor: middle;
+      user-select: none;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+
+    .overlay-status {
+      font-style: italic;
+      color: var(--ink-faded);
+      margin: 0.4rem 0 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter VI · The World Map</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html">🛡 Character Sheet</a>
+    <a href="skill-tree.html">🌳 Skill Tree</a>
+    <a href="loot-box.html">🎁 Loot Box</a>
+    <a href="world-map.html" class="current">🗺️ World Map</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>The Atlas</h2>
+    <p class="rule-note">Every long road is a journey of towns. Travel one town at a time; the mists part as you go.</p>
+    <ul class="atlas-list" id="atlas"></ul>
+    <hr class="atlas-divider">
+    <div class="chip-row" id="templates"></div>
+    <form id="new-journey-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="journey-icon">Icon</label>
+          <input id="journey-icon" value="🗺️" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="journey-name">New journey</label>
+          <input id="journey-name" placeholder="The Road to the Corner Office" required maxlength="50">
+        </div>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Chart the Journey</button>
+    </form>
+  </aside>
+
+  <section class="panel">
+    <h2>The Map</h2>
+    <div id="map"></div>
+    <div id="editor"></div>
+  </section>
+
+</main>
+
+<div class="overlay" id="wp-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="font-size: 1.4rem;" id="wp-title"></div>
+    <div class="overlay-sigil" id="wp-icon"></div>
+    <p class="overlay-status" id="wp-status"></p>
+    <p class="reward-line" id="wp-reward"></p>
+    <div>
+      <button class="btn" id="wp-arrive" hidden>Arrive</button>
+      <button class="btn btn-danger" id="wp-raze" hidden>Raze</button>
+      <button class="btn btn-ghost" id="wp-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="arrival-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" id="arrival-title" style="color: var(--forest);"></div>
+    <div class="overlay-sigil" id="arrival-icon"></div>
+    <p id="arrival-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="arrival-reward"></p>
+    <button class="btn" id="arrival-close">Press On</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('worldMap', () => ({ journeys: [], activeId: null }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  // Rows: [name, icon, gold, xp]
+  const TEMPLATES = {
+    novelist: {
+      name: "The Novelist's Voyage", icon: '🖋️',
+      waypoints: [
+        ['Outline the tale', '📜', 10, 20],
+        ['Write the first chapter', '✍️', 15, 30],
+        ['Reach half the manuscript', '📖', 25, 50],
+        ['Finish the full draft', '📚', 50, 75],
+        ['Revise it end to end', '🔍', 50, 75],
+        ['Query ten agents', '📮', 100, 150],
+      ],
+    },
+    debtfree: {
+      name: 'The Debt-Free Passage', icon: '💰',
+      waypoints: [
+        ['Face the full ledger', '🧾', 10, 20],
+        ['Save a small emergency fund', '🛟', 20, 40],
+        ['Slay the smallest debt', '⚔️', 30, 50],
+        ['Move half the mountain', '⛰️', 50, 75],
+        ['Make the final payment', '🎉', 100, 150],
+      ],
+    },
+  };
+
+  const TERRAIN = ['🌲', '🌲', '⛰️', '🏔️', '🌊', '🌾', '🌵', '🦌', '🏚️'];
+
+  const activeJourney = () => store.journeys.find((j) => j.id === store.activeId) || null;
+  const doneCount = (j) => j.waypoints.filter((w) => w.done).length;
+
+  // Deterministic RNG so each journey's terrain stays put between renders.
+  function seededRng(str) {
+    let h = 1779033703;
+    for (const ch of String(str)) h = Math.imul(h ^ ch.codePointAt(0), 3432918353);
+    return () => {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return ((h ^= h >>> 16) >>> 0) / 4294967296;
+    };
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderAtlas() {
+    $('#atlas').innerHTML = store.journeys.map((j) => `
+      <li>
+        <button class="atlas-row ${j.id === store.activeId ? 'active' : ''}" data-select="${j.id}">
+          <span>${esc(j.icon)}</span>
+          <span>${esc(j.name)}</span>
+          <span class="mini-progress">${doneCount(j)}/${j.waypoints.length}</span>
+        </button>
+      </li>`).join('')
+      || '<li class="empty-state" style="padding: 0.8rem;">The atlas holds no journeys yet.</li>';
+
+    $('#templates').innerHTML = Object.entries(TEMPLATES).map(([key, t]) =>
+      `<button class="chip" data-template="${key}">${t.icon} ${esc(t.name)}</button>`).join('');
+  }
+
+  function wrapLabel(name) {
+    const words = String(name).split(' ');
+    let lines = [];
+    let cur = '';
+    for (const w of words) {
+      if (cur && (cur + ' ' + w).length > 16) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+    if (lines.length > 2) { lines = lines.slice(0, 2); lines[1] += '…'; }
+    return lines;
+  }
+
+  function renderMap() {
+    const j = activeJourney();
+    if (!j) {
+      $('#map').innerHTML = `
+        <div class="empty-state">
+          The map is blank vellum.<br>
+          Chart a journey in the atlas — a long road with towns along the way —
+          and watch the mists part as you travel it.
+        </div>`;
+      $('#editor').innerHTML = '';
+      return;
+    }
+    if (!j.waypoints.length) {
+      $('#map').innerHTML = `
+        <div class="empty-state">
+          ${esc(j.icon)} ${esc(j.name)} has no towns yet.<br>
+          Found the first one below — the first stop on this road.
+        </div>`;
+      renderEditor(j);
+      return;
+    }
+
+    const COLS = 4, PAD = 70, CELL = 180, ROWH = 150, R = 26;
+    const c = doneCount(j);
+    const points = [{ home: true }, ...j.waypoints];
+    const pt = (k) => {
+      const row = Math.floor(k / COLS);
+      let col = k % COLS;
+      if (row % 2) col = COLS - 1 - col;
+      return { x: PAD + col * CELL, y: PAD + row * ROWH };
+    };
+    const rows = Math.floor((points.length - 1) / COLS) + 1;
+    const width = PAD * 2 + CELL * (COLS - 1);
+    const height = PAD * 2 + ROWH * (rows - 1) + 30;
+
+    // Scattered terrain, kept clear of the towns themselves.
+    const rng = seededRng(j.id);
+    let terrain = '';
+    for (let i = 0; i < Math.min(30, 8 + points.length * 3); i++) {
+      for (let tries = 0; tries < 12; tries++) {
+        const x = 25 + rng() * (width - 50);
+        const y = 30 + rng() * (height - 55);
+        const clear = points.every((_, k) => {
+          const p = pt(k);
+          return (p.x - x) ** 2 + (p.y - y) ** 2 > 62 ** 2;
+        });
+        if (clear) {
+          terrain += `<text class="terrain" x="${x.toFixed(0)}" y="${y.toFixed(0)}">${TERRAIN[Math.floor(rng() * TERRAIN.length)]}</text>`;
+          break;
+        }
+      }
+    }
+
+    const trail = points.slice(1).map((_, i) => {
+      const a = pt(i), b = pt(i + 1);
+      const mx = (a.x + b.x) / 2;
+      const cls = j.waypoints[i].done ? 'trail-traveled' : '';
+      return `<path class="trail ${cls}" d="M ${a.x} ${a.y} C ${mx} ${a.y}, ${mx} ${b.y}, ${b.x} ${b.y}"/>`;
+    }).join('');
+
+    const towns = points.map((p, k) => {
+      const { x, y } = pt(k);
+      if (p.home) {
+        return `
+          <g class="wp wp-home" data-home="1">
+            <circle cx="${x}" cy="${y}" r="${R}"/>
+            <text class="wp-icon" x="${x}" y="${y}">🏰</text>
+            <text class="wp-label" x="${x}" y="${y + R + 16}">Home</text>
+          </g>`;
+      }
+      const i = k - 1;
+      const state = p.done ? 'done' : i === c ? 'next' : 'fog';
+      const icon = state === 'fog' ? '☁️' : p.icon;
+      const label = state === 'fog'
+        ? `<tspan x="${x}">uncharted</tspan>`
+        : wrapLabel(p.name).map((line, li) => `<tspan x="${x}" dy="${li ? 14 : 0}">${esc(line)}</tspan>`).join('');
+      return `
+        <g class="wp wp-${state}" data-wp="${p.id}">
+          <circle cx="${x}" cy="${y}" r="${R}"/>
+          <text class="wp-icon" x="${x}" y="${y}">${esc(icon)}</text>
+          <text class="wp-label" x="${x}" y="${y + R + 16}">${label}</text>
+        </g>`;
+    }).join('');
+
+    const tokenAt = pt(c);
+    const token = `<text class="token" x="${tokenAt.x + 20}" y="${tokenAt.y - 18}">🧭</text>`;
+
+    $('#map').innerHTML = `
+      <div class="map-scroll">
+        <svg class="map-svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+          <defs>
+            <linearGradient id="gold-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#e8c95a"/>
+              <stop offset="0.6" stop-color="#c9a227"/>
+              <stop offset="1" stop-color="#8a6d14"/>
+            </linearGradient>
+          </defs>
+          ${terrain}
+          ${trail}
+          ${towns}
+          ${token}
+        </svg>
+      </div>`;
+    renderEditor(j);
+  }
+
+  function renderEditor(j) {
+    $('#editor').innerHTML = `
+      <hr class="section-divider">
+      <form id="new-wp-form">
+        <div class="field-row">
+          <div class="field" style="flex: 0 0 4.5rem;">
+            <label for="wp-new-icon">Icon</label>
+            <input id="wp-new-icon" value="🏘️" maxlength="4">
+          </div>
+          <div class="field">
+            <label for="wp-new-name">Found a town at road's end (a milestone)</label>
+            <input id="wp-new-name" placeholder="Reach half the manuscript" required maxlength="60">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="wp-new-gold">Gold on arrival</label>
+            <input id="wp-new-gold" type="number" value="15" min="0" max="9999" required>
+          </div>
+          <div class="field">
+            <label for="wp-new-xp">XP on arrival</label>
+            <input id="wp-new-xp" type="number" value="25" min="1" max="9999" required>
+          </div>
+        </div>
+        <button class="btn" type="submit">Found the Town</button>
+        <button class="btn btn-ghost" type="button" data-burn="${j.id}" style="float: right;">Burn the Map</button>
+      </form>`;
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderAtlas();
+    renderMap();
+  }
+
+  let inspectedId = null;
+
+  function openWaypoint(j, wp) {
+    inspectedId = wp.id;
+    const i = j.waypoints.findIndex((w) => w.id === wp.id);
+    const c = doneCount(j);
+    const state = wp.done ? 'done' : i === c ? 'next' : 'fog';
+    const isLast = i === j.waypoints.length - 1;
+    $('#wp-title').textContent = state === 'fog' ? 'Uncharted Lands' : wp.name;
+    $('#wp-icon').textContent = state === 'fog' ? '☁️' : wp.icon;
+    $('#wp-reward').textContent = state === 'fog' ? '' : `+${wp.gold} gold · +${wp.xp} xp`;
+    $('#wp-arrive').hidden = state !== 'next';
+    $('#wp-raze').hidden = !(isLast && !wp.done);
+    $('#wp-status').textContent =
+      state === 'done' ? 'Conquered. Its flag flies for you.'
+      : state === 'next' ? 'The road leads here next. Arrive when the deed is done in the real world.'
+      : 'Hidden in the mists. Travel the road and it will reveal itself.';
+    $('#wp-overlay').hidden = false;
+  }
+
+  $('#new-journey-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#journey-name').value.trim();
+    if (!name) return;
+    const j = { id: uid(), name, icon: $('#journey-icon').value.trim() || '🗺️', waypoints: [] };
+    store.journeys.unshift(j);
+    store.activeId = j.id;
+    LifeGame.save();
+    e.target.reset();
+    $('#journey-icon').value = '🗺️';
+    renderAll();
+  });
+
+  document.addEventListener('submit', (e) => {
+    if (e.target.id !== 'new-wp-form') return;
+    e.preventDefault();
+    const j = activeJourney();
+    if (!j) return;
+    const name = $('#wp-new-name').value.trim();
+    if (!name) return;
+    j.waypoints.push({
+      id: uid(),
+      name,
+      icon: $('#wp-new-icon').value.trim() || '🏘️',
+      gold: Math.max(0, parseInt($('#wp-new-gold').value, 10) || 0),
+      xp: Math.max(1, parseInt($('#wp-new-xp').value, 10) || 1),
+      done: false,
+    });
+    LifeGame.save();
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const wpEl = e.target.closest('[data-wp]');
+    if (wpEl) {
+      const j = activeJourney();
+      const wp = j && j.waypoints.find((w) => w.id === wpEl.dataset.wp);
+      if (wp) openWaypoint(j, wp);
+      return;
+    }
+
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const j = activeJourney();
+
+    if (btn.dataset.select) {
+      store.activeId = btn.dataset.select;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.template) {
+      const t = TEMPLATES[btn.dataset.template];
+      store.journeys.unshift({
+        id: uid(),
+        name: t.name,
+        icon: t.icon,
+        waypoints: t.waypoints.map(([name, icon, gold, xp]) =>
+          ({ id: uid(), name, icon, gold, xp, done: false })),
+      });
+      store.activeId = store.journeys[0].id;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.burn) {
+      const target = store.journeys.find((x) => x.id === btn.dataset.burn);
+      if (target && confirm(`Burn the map of ${target.name}? The whole journey is lost.`)) {
+        store.journeys = store.journeys.filter((x) => x.id !== btn.dataset.burn);
+        if (store.activeId === btn.dataset.burn) store.activeId = store.journeys[0]?.id ?? null;
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'wp-arrive' && j) {
+      const i = j.waypoints.findIndex((w) => w.id === inspectedId);
+      const wp = j.waypoints[i];
+      if (wp && !wp.done && i === doneCount(j)) {
+        wp.done = true;
+        LifeGame.award('worldMap', `Arrived at ${wp.name} (${j.name})`, { gold: wp.gold, xp: wp.xp });
+        $('#wp-overlay').hidden = true;
+        const finished = doneCount(j) === j.waypoints.length;
+        $('#arrival-title').textContent = finished ? "✦ Journey's End ✦" : '✦ You Arrive ✦';
+        $('#arrival-icon').textContent = wp.icon;
+        $('#arrival-text').textContent = finished
+          ? `The road of ${j.name} is fully traveled. Every mist has parted.`
+          : `“${wp.name}” is behind you now. The mists part on the road ahead.`;
+        $('#arrival-reward').textContent = `+${wp.gold} gold · +${wp.xp} xp`;
+        $('#arrival-overlay').hidden = false;
+        renderAll();
+      }
+    } else if (btn.id === 'wp-raze' && j) {
+      const wp = j.waypoints.find((w) => w.id === inspectedId);
+      const isLast = j.waypoints[j.waypoints.length - 1]?.id === inspectedId;
+      if (wp && !wp.done && isLast && confirm(`Raze “${wp.name}” from the map?`)) {
+        j.waypoints.pop();
+        LifeGame.save();
+        $('#wp-overlay').hidden = true;
+        renderAll();
+      }
+    } else if (btn.id === 'wp-close') {
+      $('#wp-overlay').hidden = true;
+    } else if (btn.id === 'arrival-close') {
+      $('#arrival-overlay').hidden = true;
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

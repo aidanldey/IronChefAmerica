@@ -13,6 +13,7 @@ like chapters of one big game.
 | Character Sheet — invent your own attributes, train them with logged deeds | `character-sheet.html` | ✅ |
 | Skill Tree — branching milestone trees; master a node to unlock the next | `skill-tree.html` | ✅ |
 | Loot Box — spend earned gold on self-defined rewards, by shop or by chance | `loot-box.html` | ✅ |
+| World Map — long goals as fog-of-war journeys, conquered town by town | `world-map.html` | ✅ |
 | Habit Streaks, Achievements, Year in Review, … | — | planned |
 
 Open any app file directly in a browser — no build step, no server, no
