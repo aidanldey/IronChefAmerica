@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boss Battle — LifeQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Boss Battle–specific styling, on top of the shared design system. */
+
+    .boss-card {
+      text-align: center;
+      margin-bottom: 1.1rem;
+    }
+
+    .boss-sigil {
+      font-size: 4.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    .boss-name {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.18em;
+      font-size: 1.7rem;
+      margin-top: 0.3rem;
+    }
+
+    .boss-bounty {
+      font-style: italic;
+      font-size: 0.9rem;
+      color: var(--ink-faded);
+      margin: 0.2rem 0 0.8rem;
+    }
+
+    .slain .boss-sigil { filter: grayscale(1) opacity(0.55); }
+
+    .attack-list { list-style: none; margin-top: 0.9rem; }
+
+    .attack-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.5rem 0.2rem;
+      border-bottom: 1px dotted var(--parchment-edge);
+    }
+
+    .attack-row.done .attack-name {
+      text-decoration: line-through;
+      color: var(--ink-faded);
+    }
+
+    .attack-name { flex: 1; }
+
+    .dmg-badge {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      font-size: 0.85rem;
+      color: var(--blood);
+      white-space: nowrap;
+    }
+
+    .battle-log {
+      margin-top: 1.1rem;
+      max-height: 160px;
+      overflow-y: auto;
+      font-size: 0.88rem;
+      font-style: italic;
+      color: var(--ink-faded);
+      border-top: 2px solid var(--parchment-edge);
+      padding-top: 0.6rem;
+    }
+
+    .battle-log p { padding: 0.15rem 0; }
+
+    .bestiary-list { list-style: none; }
+
+    .bestiary-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      padding: 0.45rem 0.5rem;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .bestiary-row:hover { border-color: var(--gold-dark); }
+
+    .bestiary-row.active {
+      border-color: var(--parchment-edge);
+      background: rgba(90, 61, 30, 0.12);
+    }
+
+    .bestiary-row .mini-hp {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--ink-faded);
+      white-space: nowrap;
+    }
+
+    .bestiary-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1rem 0 0.9rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .damage-float {
+      position: absolute;
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: var(--blood-bright);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      animation: float-up 900ms ease-out forwards;
+      z-index: 10;
+    }
+
+    @keyframes float-up {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(-70px); opacity: 0; }
+    }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ LifeQuest ⚔</div>
+  <div class="site-sub">Chapter I · The Boss Battle</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>Bestiary</h2>
+    <p class="rule-note">Name a great trial in your life, and give it a body worth slaying.</p>
+    <ul class="bestiary-list" id="bestiary"></ul>
+    <hr class="bestiary-divider">
+    <form id="new-boss-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="boss-sigil">Sigil</label>
+          <input id="boss-sigil" value="🐉" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="boss-name">Boss name</label>
+          <input id="boss-name" placeholder="The Tax Hydra" required maxlength="60">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="boss-hp">Hit points</label>
+          <input id="boss-hp" type="number" value="100" min="1" max="99999" required>
+        </div>
+        <div class="field">
+          <label for="boss-gold">Gold bounty</label>
+          <input id="boss-gold" type="number" value="50" min="0" max="99999" required>
+        </div>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Summon Boss</button>
+    </form>
+  </aside>
+
+  <section class="panel" id="arena-panel">
+    <h2>The Arena</h2>
+    <div id="arena"></div>
+  </section>
+
+</main>
+
+<div class="overlay" id="victory-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title">☠ Victory ☠</div>
+    <div class="boss-sigil" id="victory-sigil"></div>
+    <p id="victory-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="victory-reward"></p>
+    <button class="btn" id="victory-close">Claim the Spoils</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('bossBattle', () => ({ bosses: [], activeId: null }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const activeBoss = () => store.bosses.find((b) => b.id === store.activeId) || null;
+
+  function log(boss, msg) {
+    boss.log.unshift(msg);
+    boss.log.length = Math.min(boss.log.length, 50);
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderBestiary() {
+    $('#bestiary').innerHTML = store.bosses.map((b) => `
+      <li>
+        <button class="bestiary-row ${b.id === store.activeId ? 'active' : ''}" data-select="${b.id}">
+          <span>${b.slain ? '☠' : esc(b.sigil)}</span>
+          <span>${esc(b.name)}</span>
+          <span class="mini-hp">${b.slain ? 'slain' : b.hp + ' hp'}</span>
+        </button>
+      </li>`).join('')
+      || '<li class="empty-state" style="padding: 0.8rem;">No beasts yet stalk these lands.</li>';
+  }
+
+  function renderArena() {
+    const boss = activeBoss();
+    if (!boss) {
+      $('#arena').innerHTML = `
+        <div class="empty-state">
+          The arena stands empty.<br>
+          Summon a boss from the bestiary — a dread project, a looming debt,
+          an unwritten thesis — and strike it down blow by blow.
+        </div>`;
+      return;
+    }
+
+    const pct = Math.max(0, (boss.hp / boss.maxHp) * 100);
+    $('#arena').innerHTML = `
+      <div class="boss-card ${boss.slain ? 'slain' : ''}" id="boss-card">
+        <div class="boss-sigil">${esc(boss.sigil)}</div>
+        <div class="boss-name">${esc(boss.name)}</div>
+        <div class="boss-bounty">Bounty: ${boss.bountyGold} gold · ${boss.bountyXp} xp</div>
+        <div class="hp-track">
+          <div class="hp-fill" style="width: ${pct}%;"></div>
+          <div class="hp-label">${boss.hp} / ${boss.maxHp}</div>
+        </div>
+      </div>
+
+      <ul class="attack-list">
+        ${boss.tasks.map((t) => `
+          <li class="attack-row ${t.done ? 'done' : ''}">
+            <span class="attack-name">${esc(t.name)}</span>
+            <span class="dmg-badge">⚔ ${t.dmg}</span>
+            ${boss.slain
+              ? ''
+              : t.done
+                ? `<button class="btn btn-ghost" data-undo="${t.id}">Undo</button>`
+                : `<button class="btn btn-danger" data-strike="${t.id}">Strike</button>
+                   <button class="btn btn-ghost" data-remove="${t.id}" title="Remove">✕</button>`}
+          </li>`).join('')}
+      </ul>
+
+      ${boss.slain ? '' : `
+        <form id="new-attack-form" style="margin-top: 1rem;">
+          <div class="field-row">
+            <div class="field">
+              <label for="attack-name">New attack (a task that wounds this boss)</label>
+              <input id="attack-name" placeholder="Sever one head: file the W-2" required maxlength="80">
+            </div>
+            <div class="field" style="flex: 0 0 6.5rem;">
+              <label for="attack-dmg">Damage</label>
+              <input id="attack-dmg" type="number" value="10" min="1" max="99999" required>
+            </div>
+          </div>
+          <button class="btn" type="submit">Ready the Attack</button>
+          <button class="btn btn-ghost" type="button" data-banish="${boss.id}" style="float: right;">Banish Boss</button>
+        </form>`}
+
+      <div class="battle-log">
+        ${boss.log.map((m) => `<p>※ ${esc(m)}</p>`).join('') || '<p>※ The battle has not yet begun.</p>'}
+      </div>`;
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderBestiary();
+    renderArena();
+  }
+
+  function floatDamage(dmg) {
+    const card = $('#boss-card');
+    if (!card) return;
+    card.classList.remove('quake');
+    void card.offsetWidth; // restart the animation
+    card.classList.add('quake');
+    const float = document.createElement('div');
+    float.className = 'damage-float';
+    float.textContent = `−${dmg}`;
+    float.style.left = `${45 + Math.random() * 10}%`;
+    float.style.top = '2.5rem';
+    card.style.position = 'relative';
+    card.appendChild(float);
+    setTimeout(() => float.remove(), 900);
+  }
+
+  function strike(boss, task) {
+    task.done = true;
+    boss.hp = Math.max(0, boss.hp - task.dmg);
+    log(boss, `You strike with “${task.name}” for ${task.dmg} damage.`);
+    LifeGame.award('bossBattle', `Struck ${boss.name}: ${task.name}`, { xp: task.dmg });
+
+    if (boss.hp === 0 && !boss.slain) {
+      boss.slain = true;
+      log(boss, `${boss.name} is slain! Bounty claimed: ${boss.bountyGold} gold, ${boss.bountyXp} xp.`);
+      LifeGame.award('bossBattle', `Slew ${boss.name}`, { gold: boss.bountyGold, xp: boss.bountyXp });
+      $('#victory-sigil').textContent = boss.sigil;
+      $('#victory-text').textContent = `${boss.name} has fallen before you.`;
+      $('#victory-reward').textContent = `+${boss.bountyGold} gold · +${boss.bountyXp} xp`;
+      $('#victory-overlay').hidden = false;
+    }
+    LifeGame.save();
+  }
+
+  $('#new-boss-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const maxHp = Math.max(1, parseInt($('#boss-hp').value, 10) || 100);
+    const bountyGold = Math.max(0, parseInt($('#boss-gold').value, 10) || 0);
+    const boss = {
+      id: uid(),
+      name: $('#boss-name').value.trim(),
+      sigil: $('#boss-sigil').value.trim() || '🐉',
+      maxHp,
+      hp: maxHp,
+      bountyGold,
+      bountyXp: maxHp, // slaying grants bonus XP equal to the boss's full health
+      tasks: [],
+      log: [],
+      slain: false,
+    };
+    if (!boss.name) return;
+    store.bosses.unshift(boss);
+    store.activeId = boss.id;
+    log(boss, `${boss.name} rises, with ${boss.maxHp} hit points.`);
+    LifeGame.save();
+    e.target.reset();
+    $('#boss-sigil').value = '🐉';
+    renderAll();
+  });
+
+  document.addEventListener('submit', (e) => {
+    if (e.target.id !== 'new-attack-form') return;
+    e.preventDefault();
+    const boss = activeBoss();
+    if (!boss || boss.slain) return;
+    const name = $('#attack-name').value.trim();
+    const dmg = Math.max(1, parseInt($('#attack-dmg').value, 10) || 1);
+    if (!name) return;
+    boss.tasks.push({ id: uid(), name, dmg, done: false });
+    LifeGame.save();
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const boss = activeBoss();
+
+    if (btn.dataset.select) {
+      store.activeId = btn.dataset.select;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.strike && boss) {
+      const task = boss.tasks.find((t) => t.id === btn.dataset.strike);
+      if (task && !task.done) {
+        strike(boss, task);
+        renderAll();
+        floatDamage(task.dmg);
+      }
+    } else if (btn.dataset.undo && boss && !boss.slain) {
+      const task = boss.tasks.find((t) => t.id === btn.dataset.undo);
+      if (task && task.done) {
+        task.done = false;
+        boss.hp = Math.min(boss.maxHp, boss.hp + task.dmg);
+        log(boss, `The wound from “${task.name}” closes. ${boss.name} regains ${task.dmg} hp.`);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.dataset.remove && boss) {
+      boss.tasks = boss.tasks.filter((t) => t.id !== btn.dataset.remove);
+      LifeGame.save();
+      renderAll();
+    } else if (btn.dataset.banish) {
+      const target = store.bosses.find((b) => b.id === btn.dataset.banish);
+      if (target && confirm(`Banish ${target.name} from the bestiary? Its battle is forfeit.`)) {
+        store.bosses = store.bosses.filter((b) => b.id !== btn.dataset.banish);
+        if (store.activeId === btn.dataset.banish) {
+          store.activeId = store.bosses[0]?.id ?? null;
+        }
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'victory-close') {
+      $('#victory-overlay').hidden = true;
+      renderAll();
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,306 @@
+/* ==========================================================================
+   LifeQuest — shared design system
+   Classic fantasy board-game look: dark wood table, parchment panels,
+   gold trim, blood-red vitality bars. Every app page links this file so
+   the whole site reads as one game.
+   ========================================================================== */
+
+:root {
+  --ink: #2b1d0e;
+  --ink-faded: #6b543a;
+  --parchment: #f0e2c0;
+  --parchment-dark: #e2cf9f;
+  --parchment-edge: #5a3d1e;
+  --wood: #1c1008;
+  --wood-light: #37220f;
+  --gold: #c9a227;
+  --gold-bright: #e8c95a;
+  --gold-dark: #8a6d14;
+  --blood: #8c1d18;
+  --blood-bright: #c03a2b;
+  --forest: #2f5d3a;
+
+  --font-body: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+  --font-display: 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { color-scheme: dark; }
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--parchment);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(232, 201, 90, 0.07), transparent 60%),
+    repeating-linear-gradient(90deg,
+      rgba(0, 0, 0, 0.18) 0px, rgba(0, 0, 0, 0) 3px,
+      rgba(0, 0, 0, 0.18) 7px, rgba(0, 0, 0, 0) 11px),
+    linear-gradient(180deg, var(--wood-light), var(--wood) 70%);
+  background-attachment: fixed;
+}
+
+/* ---- Site chrome ------------------------------------------------------- */
+
+.site-header {
+  text-align: center;
+  padding: 1.6rem 1rem 1.1rem;
+  border-bottom: 3px double var(--gold-dark);
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.1));
+}
+
+.site-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4.5vw, 2.8rem);
+  font-variant: small-caps;
+  letter-spacing: 0.28em;
+  color: var(--gold-bright);
+  text-shadow: 0 2px 0 #4a3506, 0 4px 10px rgba(0, 0, 0, 0.8);
+}
+
+.site-sub {
+  margin-top: 0.35rem;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  color: var(--parchment-dark);
+  opacity: 0.85;
+}
+
+.purse {
+  margin-top: 0.7rem;
+  display: inline-flex;
+  gap: 1.2rem;
+  padding: 0.3rem 1.2rem;
+  border: 1px solid var(--gold-dark);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 1.4rem;
+  max-width: 1100px;
+  margin: 1.6rem auto;
+  padding: 0 1rem 3rem;
+}
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+/* ---- Parchment panels -------------------------------------------------- */
+
+.panel {
+  position: relative;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse at 85% 95%, rgba(90, 61, 30, 0.22), transparent 50%),
+    linear-gradient(160deg, var(--parchment), var(--parchment-dark));
+  border: 2px solid var(--parchment-edge);
+  outline: 1px solid var(--gold-dark);
+  outline-offset: 3px;
+  border-radius: 4px;
+  padding: 1.3rem 1.4rem 1.5rem;
+  box-shadow:
+    inset 0 0 32px rgba(90, 61, 30, 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+.panel::before,
+.panel::after {
+  content: '❧';
+  position: absolute;
+  color: var(--gold-dark);
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
+.panel::before { top: 0.35rem; left: 0.55rem; }
+.panel::after  { bottom: 0.35rem; right: 0.55rem; transform: rotate(180deg); }
+
+.panel h2 {
+  font-family: var(--font-display);
+  font-variant: small-caps;
+  letter-spacing: 0.14em;
+  font-size: 1.25rem;
+  text-align: center;
+  color: var(--ink);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 2px solid var(--parchment-edge);
+}
+
+.panel h2::after {
+  content: ' ✦';
+  color: var(--gold-dark);
+}
+
+.panel h2::before {
+  content: '✦ ';
+  color: var(--gold-dark);
+}
+
+.rule-note {
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-faded);
+  text-align: center;
+  margin-bottom: 0.8rem;
+}
+
+/* ---- Buttons ----------------------------------------------------------- */
+
+.btn {
+  font-family: var(--font-body);
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  font-size: 0.95rem;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold) 55%, var(--gold-dark));
+  border: 1px solid #5c470d;
+  border-radius: 3px;
+  padding: 0.42rem 1.1rem;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.45);
+  transition: filter 120ms ease, transform 80ms ease;
+}
+
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35); }
+
+.btn-danger {
+  color: var(--parchment);
+  background: linear-gradient(180deg, var(--blood-bright), var(--blood) 60%, #5c110d);
+  border-color: #3f0b08;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--parchment-edge);
+  color: var(--ink-faded);
+  box-shadow: none;
+}
+
+.btn-ghost:hover { color: var(--ink); border-color: var(--ink); filter: none; }
+
+/* ---- Forms ------------------------------------------------------------- */
+
+.field { margin-bottom: 0.7rem; }
+
+.field label {
+  display: block;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: var(--ink-faded);
+  margin-bottom: 0.2rem;
+}
+
+.field input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--parchment-edge);
+  border-radius: 3px;
+  padding: 0.4rem 0.55rem;
+}
+
+.field input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.field-row { display: flex; gap: 0.6rem; }
+.field-row .field { flex: 1; }
+
+/* ---- Vitality (HP) bars ------------------------------------------------ */
+
+.hp-track {
+  position: relative;
+  height: 26px;
+  border: 2px solid var(--parchment-edge);
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 calc(10% - 1px), rgba(43, 29, 14, 0.35) calc(10% - 1px) 10%),
+    linear-gradient(180deg, #3a2a18, #241708);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(180deg, var(--blood-bright), var(--blood) 60%, #5c110d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: width 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.hp-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  color: var(--parchment);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---- Shared animations ------------------------------------------------- */
+
+@keyframes quake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 2px) rotate(-0.6deg); }
+  40% { transform: translate(5px, -2px) rotate(0.5deg); }
+  60% { transform: translate(-4px, 1px); }
+  80% { transform: translate(3px, -1px); }
+}
+
+.quake { animation: quake 380ms ease; }
+
+@keyframes banner-drop {
+  from { transform: translateY(-40px) scale(0.92); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ---- Overlay (victory, dialogs) ---------------------------------------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 5, 0, 0.78);
+  z-index: 50;
+  padding: 1rem;
+}
+
+.overlay[hidden] { display: none; }
+
+.overlay .panel {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  animation: banner-drop 450ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.overlay-title {
+  font-family: var(--font-display);
+  font-variant: small-caps;
+  letter-spacing: 0.3em;
+  font-size: 2rem;
+  color: var(--blood);
+  margin-bottom: 0.4rem;
+}
