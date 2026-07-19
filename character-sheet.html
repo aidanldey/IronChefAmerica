@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Sheet — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Character Sheet–specific styling, on top of the shared design system. */
+
+    .portrait {
+      text-align: center;
+      margin-bottom: 0.9rem;
+    }
+
+    .portrait-sigil {
+      font-size: 4.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    .hero-name {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.14em;
+      font-size: 1.5rem;
+      margin-top: 0.3rem;
+      overflow-wrap: break-word;
+    }
+
+    .hero-title {
+      font-style: italic;
+      color: var(--ink-faded);
+      margin-top: 0.1rem;
+    }
+
+    .renown-block { margin: 0.9rem 0 0.3rem; }
+
+    .renown-caption {
+      display: flex;
+      justify-content: space-between;
+      font-variant: small-caps;
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+      color: var(--ink-faded);
+      margin-bottom: 0.25rem;
+    }
+
+    /* Gold XP fill on the shared vitality track */
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(180deg, var(--gold-bright), var(--gold) 60%, var(--gold-dark));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: width 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    }
+
+    .identity-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .legend-title {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      text-align: center;
+      font-size: 1.05rem;
+      color: var(--ink-faded);
+      margin-bottom: 0.5rem;
+    }
+
+    .legend-list {
+      list-style: none;
+      max-height: 260px;
+      overflow-y: auto;
+      font-size: 0.86rem;
+      font-style: italic;
+      color: var(--ink-faded);
+    }
+
+    .legend-list li { padding: 0.18rem 0; }
+
+    .attr-list { list-style: none; }
+
+    .attr-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.65rem 0.2rem;
+      border-bottom: 1px dotted var(--parchment-edge);
+    }
+
+    .attr-icon { font-size: 1.7rem; width: 2.2rem; text-align: center; }
+
+    .attr-body { flex: 1; min-width: 0; }
+
+    .attr-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.25rem;
+    }
+
+    .attr-name {
+      font-variant: small-caps;
+      letter-spacing: 0.08em;
+      font-size: 1.05rem;
+      overflow-wrap: break-word;
+    }
+
+    .attr-level {
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      font-size: 0.85rem;
+      color: var(--gold-dark);
+      white-space: nowrap;
+    }
+
+    .attr-row .hp-track { height: 16px; }
+    .attr-row .hp-label { font-size: 0.68rem; }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+
+    .chip:disabled {
+      opacity: 0.4;
+      cursor: default;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+
+    .overlay form { text-align: left; margin-top: 0.6rem; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter III · The Character Sheet</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html" class="current">🛡 Character Sheet</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>The Hero</h2>
+    <div class="portrait">
+      <div class="portrait-sigil" id="hero-sigil">🛡</div>
+      <div class="hero-name" id="hero-name">An Unnamed Wanderer</div>
+      <div class="hero-title" id="hero-title">of no fixed renown</div>
+    </div>
+
+    <div class="renown-block">
+      <div class="renown-caption">
+        <span>Renown</span>
+        <span id="renown-level">level 1</span>
+      </div>
+      <div class="hp-track">
+        <div class="xp-fill" id="renown-fill" style="width: 0%;"></div>
+        <div class="hp-label" id="renown-label"></div>
+      </div>
+    </div>
+
+    <form id="identity-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="id-sigil">Sigil</label>
+          <input id="id-sigil" maxlength="4" placeholder="🛡">
+        </div>
+        <div class="field">
+          <label for="id-name">Name</label>
+          <input id="id-name" maxlength="60" placeholder="Aldric the Unyielding">
+        </div>
+      </div>
+      <div class="field">
+        <label for="id-title">Title or calling</label>
+        <input id="id-title" maxlength="80" placeholder="Knight of the Standing Desk">
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Inscribe Identity</button>
+    </form>
+
+    <hr class="identity-divider">
+    <div class="legend-title">The Legend So Far</div>
+    <p class="rule-note">Deeds from every chapter — bosses struck, quests kept, attributes trained.</p>
+    <ul class="legend-list" id="legend"></ul>
+  </aside>
+
+  <section class="panel">
+    <h2>Attributes</h2>
+    <p class="rule-note">
+      Your character is yours to invent. Track Strength if you wish — or Sourdough
+      Mastery, Small Talk, or Naps of Quality. Train an attribute by logging a deed.
+    </p>
+
+    <ul class="attr-list" id="attributes"></ul>
+
+    <hr class="section-divider">
+    <div class="chip-row" id="suggestions"></div>
+    <form id="new-attr-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="attr-icon">Icon</label>
+          <input id="attr-icon" value="✨" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="attr-name">New attribute</label>
+          <input id="attr-name" placeholder="Sourdough Mastery" required maxlength="40">
+        </div>
+        <div class="field" style="flex: 0 0 auto; align-self: flex-end;">
+          <button class="btn" type="submit">Add</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<div class="overlay" id="train-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="font-size: 1.5rem;" id="train-title"></div>
+    <form id="train-form">
+      <div class="field">
+        <label for="train-deed">The deed</label>
+        <input id="train-deed" placeholder="Kneaded and proofed a new loaf" maxlength="100">
+      </div>
+      <div class="field">
+        <label for="train-xp">Effort (XP)</label>
+        <input id="train-xp" type="number" value="10" min="1" max="9999" required>
+      </div>
+      <div style="text-align: center; margin-top: 0.8rem;">
+        <button class="btn" type="submit">Log the Deed</button>
+        <button class="btn btn-ghost" type="button" id="train-cancel">Not Now</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="overlay" id="levelup-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="color: var(--gold-dark);">✦ Level Up ✦</div>
+    <div class="overlay-sigil" id="levelup-icon"></div>
+    <p id="levelup-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="levelup-level"></p>
+    <button class="btn" id="levelup-close">Glory!</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('characterSheet', () => ({
+    identity: { name: '', title: '', sigil: '' },
+    attributes: [],   // { id, name, icon, xp }
+  }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const SUGGESTIONS = [
+    ['💪', 'Strength'], ['🧠', 'Intellect'], ['❤️', 'Vitality'],
+    ['🗣️', 'Charisma'], ['🎨', 'Craft'], ['🪙', 'Thrift'],
+    ['🧘', 'Serenity'], ['🍳', 'Cookery'],
+  ];
+
+  // Attribute levels climb faster than renown: 25 xp to level 2, then quadratic.
+  const attrLevel = (xp) => Math.floor(Math.sqrt(xp / 25)) + 1;
+  const attrXpFor = (lvl) => 25 * (lvl - 1) ** 2;
+  const renownXpFor = (lvl) => 50 * (lvl - 1) ** 2;
+
+  const APP_ICONS = { bossBattle: '⚔', questLog: '📜', characterSheet: '🛡' };
+
+  let trainingId = null;
+
+  function barPct(xp, floorXp, ceilXp) {
+    return Math.min(100, ((xp - floorXp) / (ceilXp - floorXp)) * 100);
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderHero() {
+    const id = store.identity;
+    $('#hero-sigil').textContent = id.sigil || '🛡';
+    $('#hero-name').textContent = id.name || 'An Unnamed Wanderer';
+    $('#hero-title').textContent = id.title || 'of no fixed renown';
+    $('#id-sigil').value = id.sigil;
+    $('#id-name').value = id.name;
+    $('#id-title').value = id.title;
+
+    const lvl = LifeGame.level();
+    const floorXp = renownXpFor(lvl);
+    const ceilXp = renownXpFor(lvl + 1);
+    $('#renown-level').textContent = `level ${lvl}`;
+    $('#renown-fill').style.width = `${barPct(LifeGame.xp, floorXp, ceilXp)}%`;
+    $('#renown-label').textContent = `${LifeGame.xp} / ${ceilXp} xp`;
+  }
+
+  function renderAttributes() {
+    if (!store.attributes.length) {
+      $('#attributes').innerHTML = `
+        <li class="empty-state">
+          This sheet awaits its first attribute.<br>
+          Choose from the classics below, or invent something no
+          character sheet has ever seen.
+        </li>`;
+    } else {
+      $('#attributes').innerHTML = store.attributes.map((a) => {
+        const lvl = attrLevel(a.xp);
+        const floorXp = attrXpFor(lvl);
+        const ceilXp = attrXpFor(lvl + 1);
+        return `
+          <li class="attr-row">
+            <span class="attr-icon">${esc(a.icon)}</span>
+            <div class="attr-body">
+              <div class="attr-caption">
+                <span class="attr-name">${esc(a.name)}</span>
+                <span class="attr-level">level ${lvl} · ${a.xp} xp</span>
+              </div>
+              <div class="hp-track">
+                <div class="xp-fill" style="width: ${barPct(a.xp, floorXp, ceilXp)}%;"></div>
+              </div>
+            </div>
+            <button class="btn" data-train="${a.id}">Train</button>
+            <button class="btn btn-ghost" data-retire="${a.id}" title="Retire attribute">✕</button>
+          </li>`;
+      }).join('');
+    }
+
+    const taken = new Set(store.attributes.map((a) => a.name.toLowerCase()));
+    $('#suggestions').innerHTML = SUGGESTIONS.map(([icon, name]) => `
+      <button class="chip" data-suggest="${esc(name)}" data-icon="${esc(icon)}"
+        ${taken.has(name.toLowerCase()) ? 'disabled' : ''}>${icon} ${esc(name)}</button>`).join('');
+  }
+
+  function renderLegend() {
+    $('#legend').innerHTML = LifeGame.history.slice(0, 25).map((h) => {
+      const d = new Date(h.at);
+      const when = `${d.getMonth() + 1}/${d.getDate()}`;
+      const gains = [h.gold ? `+${h.gold}g` : '', h.xp ? `+${h.xp}xp` : ''].filter(Boolean).join(', ');
+      return `<li>※ ${when} ${APP_ICONS[h.app] || '❖'} ${esc(h.msg)}${gains ? ` (${gains})` : ''}</li>`;
+    }).join('') || '<li>※ The legend is unwritten. Go do something worth telling.</li>';
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderHero();
+    renderAttributes();
+    renderLegend();
+  }
+
+  function addAttribute(name, icon) {
+    if (store.attributes.some((a) => a.name.toLowerCase() === name.toLowerCase())) return;
+    store.attributes.push({ id: uid(), name, icon: icon || '✨', xp: 0 });
+    LifeGame.save();
+    renderAll();
+  }
+
+  $('#identity-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    store.identity = {
+      sigil: $('#id-sigil').value.trim(),
+      name: $('#id-name').value.trim(),
+      title: $('#id-title').value.trim(),
+    };
+    LifeGame.save();
+    renderAll();
+  });
+
+  $('#new-attr-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#attr-name').value.trim();
+    if (!name) return;
+    addAttribute(name, $('#attr-icon').value.trim());
+    $('#attr-name').value = '';
+    $('#attr-icon').value = '✨';
+  });
+
+  $('#train-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const attr = store.attributes.find((a) => a.id === trainingId);
+    if (!attr) return;
+    const xp = Math.max(1, parseInt($('#train-xp').value, 10) || 1);
+    const deed = $('#train-deed').value.trim() || `Trained ${attr.name}`;
+    const before = attrLevel(attr.xp);
+    attr.xp += xp;
+    LifeGame.award('characterSheet', `${deed} (${attr.name})`, { xp });
+    $('#train-overlay').hidden = true;
+    trainingId = null;
+
+    const after = attrLevel(attr.xp);
+    if (after > before) {
+      $('#levelup-icon').textContent = attr.icon;
+      $('#levelup-text').textContent = `Your ${attr.name} has grown mighty.`;
+      $('#levelup-level').textContent = `${attr.name} · level ${after}`;
+      $('#levelup-overlay').hidden = false;
+    }
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    if (btn.dataset.suggest) {
+      addAttribute(btn.dataset.suggest, btn.dataset.icon);
+    } else if (btn.dataset.train) {
+      const attr = store.attributes.find((a) => a.id === btn.dataset.train);
+      if (attr) {
+        trainingId = attr.id;
+        $('#train-title').textContent = `Train ${attr.name}`;
+        $('#train-deed').value = '';
+        $('#train-xp').value = 10;
+        $('#train-overlay').hidden = false;
+        $('#train-deed').focus();
+      }
+    } else if (btn.dataset.retire) {
+      const attr = store.attributes.find((a) => a.id === btn.dataset.retire);
+      if (attr && confirm(`Retire ${attr.name}? Its ${attr.xp} xp of training will be forgotten.`)) {
+        store.attributes = store.attributes.filter((a) => a.id !== btn.dataset.retire);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'train-cancel') {
+      $('#train-overlay').hidden = true;
+      trainingId = null;
+    } else if (btn.id === 'levelup-close') {
+      $('#levelup-overlay').hidden = true;
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

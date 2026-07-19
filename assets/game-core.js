@@ -56,5 +56,6 @@ const LifeGame = (() => {
     level,
     get gold() { return state.gold; },
     get xp() { return state.xp; },
+    get history() { return state.history; },
   };
 })();
