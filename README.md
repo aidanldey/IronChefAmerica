@@ -15,6 +15,7 @@ like chapters of one big game.
 | Loot Box — spend earned gold on self-defined rewards, by shop or by chance | `loot-box.html` | ✅ |
 | World Map — long goals as fog-of-war journeys, conquered town by town | `world-map.html` | ✅ |
 | Daily Dungeon — daily habits as rooms; streak multipliers, torches, heatmap | `daily-dungeon.html` | ✅ |
+| Great Works — progress meters for big goals in any unit (words, steps, days) | `great-works.html` | ✅ |
 | Achievements, Year in Review, … | — | planned |
 
 Open any app file directly in a browser — no build step, no server, no

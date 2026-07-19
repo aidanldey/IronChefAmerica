@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Great Works — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Great Works–specific styling, on top of the shared design system. */
+
+    .work-list { list-style: none; }
+
+    .work-card {
+      padding: 1rem 0.3rem 1.2rem;
+      border-bottom: 2px solid var(--parchment-edge);
+    }
+
+    .work-card:last-child { border-bottom: none; }
+
+    .work-head {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .work-icon { font-size: 1.8rem; }
+
+    .work-name {
+      flex: 1;
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.2rem;
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+
+    .work-bounty {
+      font-size: 0.82rem;
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--ink-faded);
+      white-space: nowrap;
+    }
+
+    /* Tall meter built on the shared vitality track */
+    .work-card .hp-track { height: 30px; }
+
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(180deg, var(--gold-bright), var(--gold) 60%, var(--gold-dark));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: width 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    }
+
+    .work-card.done .meter-fill {
+      background: linear-gradient(180deg, #7fbf8e, var(--forest) 60%, #1e3f27);
+    }
+
+    .work-caption {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      margin-top: 0.4rem;
+    }
+
+    .work-card.done .work-caption { color: var(--forest); }
+
+    .work-update {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 0.7rem;
+    }
+
+    .work-update input {
+      flex: 1;
+      min-width: 7rem;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 3px;
+      padding: 0.4rem 0.55rem;
+    }
+
+    .work-update input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+    .update-hint {
+      width: 100%;
+      font-size: 0.78rem;
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--ink-faded);
+    }
+
+    .done-note {
+      text-align: center;
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      color: var(--forest);
+      margin-top: 0.6rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter VIII · The Great Works</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html">🛡 Character Sheet</a>
+    <a href="skill-tree.html">🌳 Skill Tree</a>
+    <a href="loot-box.html">🎁 Loot Box</a>
+    <a href="world-map.html">🗺️ World Map</a>
+    <a href="daily-dungeon.html">🗝️ Daily Dungeon</a>
+    <a href="great-works.html" class="current">🏛️ Great Works</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>Commission a Work</h2>
+    <p class="rule-note">
+      Name a monument, choose what it is measured in — words, steps, days,
+      miles, coins — and raise it piece by piece.
+    </p>
+    <div class="chip-row" id="templates"></div>
+    <form id="new-work-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="work-icon">Icon</label>
+          <input id="work-icon" value="🏛️" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="work-name">The work</label>
+          <input id="work-name" placeholder="Write the novel" required maxlength="60">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="work-target">Goal amount</label>
+          <input id="work-target" type="number" step="any" min="0.01" placeholder="60000" required>
+        </div>
+        <div class="field">
+          <label for="work-unit">Measured in</label>
+          <input id="work-unit" placeholder="words" required maxlength="20">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="work-gold">Gold on completion</label>
+          <input id="work-gold" type="number" value="50" min="0" max="99999" required>
+        </div>
+        <div class="field">
+          <label for="work-xp">XP over the whole work</label>
+          <input id="work-xp" type="number" value="100" min="0" max="99999" required>
+        </div>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Lay the Foundation</button>
+    </form>
+  </aside>
+
+  <section class="panel">
+    <h2>The Great Works</h2>
+    <ul class="work-list" id="works"></ul>
+  </section>
+
+</main>
+
+<div class="overlay" id="done-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="color: var(--forest);">✦ The Work Is Done ✦</div>
+    <div class="overlay-sigil" id="done-icon"></div>
+    <p id="done-text" style="margin-top: 0.5rem;"></p>
+    <p class="reward-line" id="done-reward"></p>
+    <button class="btn" id="done-close">Let It Stand Forever</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('greatWorks', () => ({ works: [] }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const num = (n) => Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+  // Rows: [name, icon, target, unit]
+  const TEMPLATES = [
+    ['Write the novel', '📖', 60000, 'words'],
+    ['The Twelve Steps', '🧗', 12, 'steps'],
+    ['One Hundred Days', '🌞', 100, 'days'],
+  ];
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function workCard(w) {
+    const pct = Math.min(100, (w.current / w.target) * 100);
+    const done = w.current >= w.target;
+    const exSmall = Math.max(1, Math.round(w.target * 0.02));
+    const exHalf = Math.max(1, Math.round(w.target * 0.5));
+    const caption = `${num(w.current)} of ${num(w.target)} ${esc(w.unit)} completed · ${Math.floor(pct)}%`;
+    return `
+      <li class="work-card ${done ? 'done' : ''}" data-work="${w.id}">
+        <div class="work-head">
+          <span class="work-icon">${esc(w.icon)}</span>
+          <span class="work-name">${esc(w.name)}</span>
+          <span class="work-bounty">🪙 ${w.bountyGold} · ✦ ${w.bountyXp} xp</span>
+          <button class="btn btn-ghost" data-demolish="${w.id}" title="Demolish this work">✕</button>
+        </div>
+        <div class="hp-track">
+          <div class="meter-fill" style="width: ${pct}%;"></div>
+          <div class="hp-label">${Math.floor(pct)}%</div>
+        </div>
+        <p class="work-caption">${caption}</p>
+        ${done
+          ? '<p class="done-note">✦ the work stands complete ✦</p>'
+          : `<form class="work-update" data-update="${w.id}">
+              <input name="amount" type="number" step="any" min="0.01"
+                placeholder="${esc(w.unit)}" required aria-label="Amount in ${esc(w.unit)}">
+              <button class="btn" name="mode" value="add">Add to the Tally</button>
+              <button class="btn btn-ghost" name="mode" value="set">Set as My Total</button>
+              <span class="update-hint">
+                “Add” for new progress (+${num(exSmall)} ${esc(w.unit)}) · “Set” to record where you stand (at ${num(exHalf)} ${esc(w.unit)})
+              </span>
+            </form>`}
+      </li>`;
+  }
+
+  function renderWorks() {
+    $('#works').innerHTML = store.works.map(workCard).join('') || `
+      <li class="empty-state">
+        No monuments rise here yet.<br>
+        Commission one — sixty thousand words, twelve steps, a hundred days —
+        and raise it a little at a time.
+      </li>`;
+
+    $('#templates').innerHTML = TEMPLATES.map(([name, icon, target, unit], i) =>
+      `<button class="chip" data-template="${i}">${icon} ${esc(name)} — ${num(target)} ${esc(unit)}</button>`).join('');
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderWorks();
+  }
+
+  function addWork(name, icon, target, unit, bountyGold, bountyXp) {
+    store.works.unshift({
+      id: uid(),
+      name,
+      icon: icon || '🏛️',
+      target,
+      unit,
+      current: 0,
+      bountyGold,
+      bountyXp,
+      xpPaid: 0,
+      rewarded: false,
+    });
+    LifeGame.save();
+    renderAll();
+  }
+
+  /* Both update modes land here: clamp the new total, pay out any newly
+     earned share of the XP bounty (never clawed back on corrections), and
+     fire the completion bounty exactly once. */
+  function setProgress(w, newTotal, describe) {
+    const before = w.current;
+    w.current = Math.max(0, Math.min(w.target, newTotal));
+    if (w.current === before) { LifeGame.save(); return; }
+
+    const entitled = Math.floor(w.bountyXp * (w.current / w.target));
+    const xpDelta = Math.max(0, entitled - w.xpPaid);
+    w.xpPaid = Math.max(w.xpPaid, entitled);
+
+    const finished = w.current >= w.target && !w.rewarded;
+    if (finished) w.rewarded = true;
+
+    LifeGame.award('greatWorks',
+      `${describe} — ${w.name} (${num(w.current)}/${num(w.target)} ${w.unit})`,
+      { xp: xpDelta, gold: finished ? w.bountyGold : 0 });
+
+    if (finished) {
+      $('#done-icon').textContent = w.icon;
+      $('#done-text').textContent =
+        `${w.name} stands finished: ${num(w.target)} ${w.unit}, raised by your own hand.`;
+      $('#done-reward').textContent = `+${w.bountyGold} gold · +${xpDelta} xp`;
+      $('#done-overlay').hidden = false;
+    }
+  }
+
+  $('#new-work-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#work-name').value.trim();
+    const unit = $('#work-unit').value.trim();
+    const target = parseFloat($('#work-target').value);
+    if (!name || !unit || !(target > 0)) return;
+    addWork(name, $('#work-icon').value.trim(), target, unit,
+      Math.max(0, parseInt($('#work-gold').value, 10) || 0),
+      Math.max(0, parseInt($('#work-xp').value, 10) || 0));
+    e.target.reset();
+    $('#work-icon').value = '🏛️';
+    $('#work-gold').value = 50;
+    $('#work-xp').value = 100;
+  });
+
+  document.addEventListener('submit', (e) => {
+    const form = e.target.closest('[data-update]');
+    if (!form) return;
+    e.preventDefault();
+    const w = store.works.find((x) => x.id === form.dataset.update);
+    const amount = parseFloat(form.elements.amount.value);
+    if (!w || !(amount > 0)) return;
+    const mode = e.submitter?.value || 'add';
+    if (mode === 'add') {
+      setProgress(w, w.current + amount, `Added ${num(amount)} ${w.unit}`);
+    } else {
+      setProgress(w, amount, `Tally set to ${num(Math.min(amount, w.target))} ${w.unit}`);
+    }
+    renderAll();
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    if (btn.dataset.template !== undefined) {
+      const [name, icon, target, unit] = TEMPLATES[btn.dataset.template];
+      addWork(name, icon, target, unit, 50, 100);
+    } else if (btn.dataset.demolish) {
+      const w = store.works.find((x) => x.id === btn.dataset.demolish);
+      if (w && confirm(`Demolish “${w.name}”? Its tally of ${num(w.current)} ${w.unit} is lost.`)) {
+        store.works = store.works.filter((x) => x.id !== btn.dataset.demolish);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'done-close') {
+      $('#done-overlay').hidden = true;
+    }
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>
