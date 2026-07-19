@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Dungeon — DrivenQuest</title>
+  <link rel="stylesheet" href="assets/game.css">
+  <style>
+    /* Daily Dungeon–specific styling, on top of the shared design system. */
+
+    .torch-row {
+      text-align: center;
+      font-size: 1.15rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.3rem;
+    }
+
+    .torch-note {
+      text-align: center;
+      font-style: italic;
+      font-size: 0.85rem;
+      color: var(--ink-faded);
+      margin-bottom: 0.8rem;
+    }
+
+    .torch-dead {
+      text-align: center;
+      margin-bottom: 0.8rem;
+    }
+
+    .torch-dead p {
+      font-style: italic;
+      color: var(--blood);
+      margin-bottom: 0.5rem;
+    }
+
+    .heatmap-title {
+      font-family: var(--font-display);
+      font-variant: small-caps;
+      letter-spacing: 0.12em;
+      text-align: center;
+      font-size: 1.05rem;
+      color: var(--ink-faded);
+      margin: 0.2rem 0 0.5rem;
+    }
+
+    .heatmap-scroll { overflow-x: auto; padding-bottom: 0.3rem; }
+
+    .heatmap {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(7, 13px);
+      gap: 3px;
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    .hm-cell {
+      width: 13px;
+      height: 13px;
+      border-radius: 2px;
+      background: rgba(43, 29, 14, 0.12);
+    }
+
+    .hm-none { background: rgba(140, 29, 24, 0.35); }
+    .hm-part { background: #b08a3e; }
+    .hm-full { background: var(--gold); box-shadow: inset 0 0 3px rgba(90, 61, 30, 0.6); }
+    .hm-today { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+    .heatmap-key {
+      text-align: center;
+      font-size: 0.75rem;
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--ink-faded);
+      margin-top: 0.4rem;
+    }
+
+    .delve-date {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      margin-bottom: 0.9rem;
+    }
+
+    .room-list { list-style: none; }
+
+    .room-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.6rem 0.2rem;
+      border-bottom: 1px dotted var(--parchment-edge);
+    }
+
+    .room-icon { font-size: 1.6rem; width: 2rem; text-align: center; }
+
+    .room-body { flex: 1; min-width: 0; }
+
+    .room-name { overflow-wrap: break-word; }
+
+    .room-row.cleared .room-name {
+      text-decoration: line-through;
+      color: var(--ink-faded);
+    }
+
+    .room-meta {
+      font-size: 0.82rem;
+      font-variant: small-caps;
+      letter-spacing: 0.06em;
+      color: var(--ink-faded);
+    }
+
+    .room-meta .streak { color: var(--blood-bright); }
+    .room-meta .mult { color: var(--gold-dark); }
+
+    .cleared-note {
+      font-style: italic;
+      font-size: 0.9rem;
+      color: var(--forest);
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      font-style: italic;
+      color: var(--ink-faded);
+      padding: 2.5rem 1rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 2px solid var(--parchment-edge);
+      margin: 1.1rem 0 0.9rem;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .chip {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.35);
+      border: 1px solid var(--parchment-edge);
+      border-radius: 999px;
+      padding: 0.22rem 0.7rem;
+      cursor: pointer;
+    }
+
+    .chip:hover { border-color: var(--gold-dark); background: rgba(232, 201, 90, 0.25); }
+    .chip:disabled { opacity: 0.4; cursor: default; }
+
+    .reward-line {
+      font-variant: small-caps;
+      letter-spacing: 0.1em;
+      font-size: 1.1rem;
+      color: var(--gold-dark);
+      margin: 0.6rem 0 1rem;
+    }
+
+    .overlay-sigil { font-size: 4.2rem; line-height: 1; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-title">⚔ DrivenQuest ⚔</div>
+  <div class="site-sub">Chapter VII · The Daily Dungeon</div>
+  <div class="purse">
+    <span>🪙 <span id="purse-gold">0</span> gold</span>
+    <span>✦ level <span id="purse-level">1</span></span>
+  </div>
+  <nav class="site-nav">
+    <a href="boss-battle.html">⚔ Boss Battle</a>
+    <a href="quest-log.html">📜 Quest Log</a>
+    <a href="character-sheet.html">🛡 Character Sheet</a>
+    <a href="skill-tree.html">🌳 Skill Tree</a>
+    <a href="loot-box.html">🎁 Loot Box</a>
+    <a href="world-map.html">🗺️ World Map</a>
+    <a href="daily-dungeon.html" class="current">🗝️ Daily Dungeon</a>
+  </nav>
+</header>
+
+<main class="layout">
+
+  <aside class="panel">
+    <h2>The Torches</h2>
+    <p class="rule-note">A perfect day relights a torch; a day with every room ignored snuffs one out.</p>
+    <div id="torches"></div>
+
+    <hr class="section-divider">
+    <div class="heatmap-title">Twelve Weeks of Delving</div>
+    <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
+    <div class="heatmap-key">■ untouched · ■ partial · ■ perfect</div>
+
+    <hr class="section-divider">
+    <div class="heatmap-title">Dig a New Room</div>
+    <p class="rule-note">Each room is a daily habit. The longer your streak, the richer the multiplier.</p>
+    <div class="chip-row" id="starters"></div>
+    <form id="new-habit-form">
+      <div class="field-row">
+        <div class="field" style="flex: 0 0 4.5rem;">
+          <label for="habit-icon">Icon</label>
+          <input id="habit-icon" value="🕯️" maxlength="4">
+        </div>
+        <div class="field">
+          <label for="habit-name">Daily habit</label>
+          <input id="habit-name" placeholder="Stretch before breakfast" required maxlength="60">
+        </div>
+      </div>
+      <div class="field">
+        <label for="habit-xp">Base XP per clear</label>
+        <input id="habit-xp" type="number" value="10" min="1" max="999" required>
+      </div>
+      <button class="btn" type="submit" style="width: 100%;">Dig the Room</button>
+    </form>
+  </aside>
+
+  <section class="panel">
+    <h2>Today's Delve</h2>
+    <p class="delve-date" id="delve-date"></p>
+    <ul class="room-list" id="rooms"></ul>
+  </section>
+
+</main>
+
+<div class="overlay" id="perfect-overlay" hidden>
+  <div class="panel">
+    <div class="overlay-title" style="color: var(--gold-dark);">✦ Dungeon Cleared ✦</div>
+    <div class="overlay-sigil">🗝️</div>
+    <p style="margin-top: 0.5rem;">Every room stands empty. A perfect day of delving.</p>
+    <p class="reward-line" id="perfect-reward"></p>
+    <button class="btn" id="perfect-close">Until Tomorrow</button>
+  </div>
+</div>
+
+<script src="assets/game-core.js"></script>
+<script>
+  const store = LifeGame.app('dailyDungeon', () => ({
+    habits: [],       // { id, name, icon, xp, createdAt, log: {'YYYY-MM-DD': true} }
+    hp: 10,
+    lastReckoned: '',
+  }));
+
+  const $ = (sel) => document.querySelector(sel);
+  const esc = (s) => String(s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  const MAX_HP = 10;
+  const PERFECT_BONUS = 25;
+
+  const STARTERS = [
+    ['💧', 'Drink enough water'],
+    ['🏃', 'Move your body'],
+    ['📖', 'Read 15 minutes'],
+    ['🧹', 'Tidy one corner'],
+    ['🧘', 'Sit in silence a while'],
+    ['🛌', 'Lights out by eleven'],
+  ];
+
+  function fmt(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  // Noon anchor dodges daylight-saving edge cases when stepping days.
+  function addDays(str, n) {
+    const d = new Date(str + 'T12:00:00');
+    d.setDate(d.getDate() + n);
+    return fmt(d);
+  }
+  const todayStr = () => fmt(new Date());
+
+  function streakOf(habit) {
+    const today = todayStr();
+    let day = habit.log[today] ? today : addDays(today, -1);
+    let s = 0;
+    while (habit.log[day]) { s += 1; day = addDays(day, -1); }
+    return s;
+  }
+
+  function multFor(streak) {
+    return streak >= 30 ? 3 : streak >= 14 ? 2.5 : streak >= 7 ? 2 : streak >= 3 ? 1.5 : 1;
+  }
+
+  /* Settle every day since the last visit: a day when every active room was
+     cleared relights a torch, a day when none were touched snuffs one out. */
+  function reckon() {
+    const yesterday = addDays(todayStr(), -1);
+    if (!store.lastReckoned) {
+      store.lastReckoned = yesterday;
+      LifeGame.save();
+      return;
+    }
+    let day = addDays(store.lastReckoned, 1);
+    let changed = false;
+    while (day <= yesterday) {
+      const active = store.habits.filter((h) => h.createdAt <= day);
+      if (active.length) {
+        const cleared = active.filter((h) => h.log[day]).length;
+        if (cleared === active.length) store.hp = Math.min(MAX_HP, store.hp + 1);
+        else if (cleared === 0) store.hp = Math.max(0, store.hp - 1);
+        changed = true;
+      }
+      day = addDays(day, 1);
+    }
+    store.lastReckoned = yesterday;
+    if (changed) LifeGame.save();
+  }
+
+  function renderPurse() {
+    $('#purse-gold').textContent = LifeGame.gold;
+    $('#purse-level').textContent = LifeGame.level();
+  }
+
+  function renderTorches() {
+    if (store.hp === 0) {
+      $('#torches').innerHTML = `
+        <div class="torch-dead">
+          <div class="torch-row">${'🖤'.repeat(MAX_HP)}</div>
+          <p>The last torch has gone out. The dungeon is dark and cold.</p>
+          <button class="btn" id="rekindle">Rekindle the Torches</button>
+        </div>`;
+      return;
+    }
+    $('#torches').innerHTML = `
+      <div class="torch-row">${'🔥'.repeat(store.hp)}${'🖤'.repeat(MAX_HP - store.hp)}</div>
+      <p class="torch-note">${store.hp} of ${MAX_HP} torches burning</p>`;
+  }
+
+  function renderHeatmap() {
+    const today = todayStr();
+    let start = addDays(today, -83);
+    start = addDays(start, -new Date(start + 'T12:00:00').getDay());
+    let cells = '';
+    for (let day = start; day <= today; day = addDays(day, 1)) {
+      const active = store.habits.filter((h) => h.createdAt <= day);
+      let cls = '';
+      let title = `${day} — before the dungeon`;
+      if (active.length) {
+        const cleared = active.filter((h) => h.log[day]).length;
+        cls = cleared === 0 ? 'hm-none' : cleared === active.length ? 'hm-full' : 'hm-part';
+        title = `${day} — ${cleared} of ${active.length} rooms cleared`;
+      }
+      if (day === today) cls += ' hm-today';
+      cells += `<div class="hm-cell ${cls}" title="${title}"></div>`;
+    }
+    $('#heatmap').innerHTML = cells;
+  }
+
+  function renderRooms() {
+    const today = todayStr();
+    const d = new Date(today + 'T12:00:00');
+    $('#delve-date').textContent = d.toLocaleDateString(undefined,
+      { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    if (!store.habits.length) {
+      $('#rooms').innerHTML = `
+        <li class="empty-state">
+          The dungeon has no rooms to delve.<br>
+          Dig some — one for each daily habit — and return every day
+          to clear them all before the torches gutter.
+        </li>`;
+    } else {
+      $('#rooms').innerHTML = store.habits.map((h) => {
+        const done = !!h.log[today];
+        const s = streakOf(h);
+        const nextMult = multFor(done ? s : s + 1);
+        const meta = [
+          s > 0 ? `<span class="streak">🔥 ${s}-day streak</span>` : 'no streak yet',
+          `<span class="mult">×${nextMult} ${done ? 'earned' : 'on clear'}</span>`,
+        ].join(' · ');
+        return `
+          <li class="room-row ${done ? 'cleared' : ''}">
+            <span class="room-icon">${done ? '✅' : esc(h.icon)}</span>
+            <div class="room-body">
+              <div class="room-name">${esc(h.name)}</div>
+              <div class="room-meta">${meta}</div>
+            </div>
+            ${done
+              ? '<span class="cleared-note">cleared ✓</span>'
+              : `<button class="btn" data-clear="${h.id}">Clear</button>`}
+            <button class="btn btn-ghost" data-collapse="${h.id}" title="Collapse this room">✕</button>
+          </li>`;
+      }).join('');
+    }
+
+    const taken = new Set(store.habits.map((h) => h.name.toLowerCase()));
+    $('#starters').innerHTML = STARTERS.map(([icon, name]) => `
+      <button class="chip" data-starter-name="${esc(name)}" data-starter-icon="${esc(icon)}"
+        ${taken.has(name.toLowerCase()) ? 'disabled' : ''}>${icon} ${esc(name)}</button>`).join('');
+  }
+
+  function renderAll() {
+    renderPurse();
+    renderTorches();
+    renderHeatmap();
+    renderRooms();
+  }
+
+  function addHabit(name, icon, xp) {
+    if (store.habits.some((h) => h.name.toLowerCase() === name.toLowerCase())) return;
+    store.habits.push({
+      id: uid(),
+      name,
+      icon: icon || '🕯️',
+      xp: Math.max(1, xp || 10),
+      createdAt: todayStr(),
+      log: {},
+    });
+    LifeGame.save();
+    renderAll();
+  }
+
+  $('#new-habit-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('#habit-name').value.trim();
+    if (!name) return;
+    addHabit(name, $('#habit-icon').value.trim(), parseInt($('#habit-xp').value, 10));
+    $('#habit-name').value = '';
+    $('#habit-icon').value = '🕯️';
+  });
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    if (btn.dataset.starterName) {
+      addHabit(btn.dataset.starterName, btn.dataset.starterIcon, 10);
+    } else if (btn.dataset.clear) {
+      const h = store.habits.find((x) => x.id === btn.dataset.clear);
+      const today = todayStr();
+      if (h && !h.log[today]) {
+        h.log[today] = true;
+        const s = streakOf(h);
+        const m = multFor(s);
+        const xp = Math.round(h.xp * m);
+        const gold = Math.round(2 * m);
+        LifeGame.award('dailyDungeon', `Cleared ${h.name} (🔥 ${s})`, { gold, xp });
+        if (store.habits.every((x) => x.log[today])) {
+          LifeGame.award('dailyDungeon', 'Dungeon cleared: a perfect day', { gold: PERFECT_BONUS });
+          $('#perfect-reward').textContent = `perfect-day bonus · +${PERFECT_BONUS} gold`;
+          $('#perfect-overlay').hidden = false;
+        }
+        renderAll();
+      }
+    } else if (btn.dataset.collapse) {
+      const h = store.habits.find((x) => x.id === btn.dataset.collapse);
+      if (h && confirm(`Collapse the room “${h.name}”? Its streak and history crumble with it.`)) {
+        store.habits = store.habits.filter((x) => x.id !== btn.dataset.collapse);
+        LifeGame.save();
+        renderAll();
+      }
+    } else if (btn.id === 'rekindle') {
+      store.hp = 5;
+      LifeGame.save();
+      renderAll();
+    } else if (btn.id === 'perfect-close') {
+      $('#perfect-overlay').hidden = true;
+    }
+  });
+
+  reckon();
+  renderAll();
+</script>
+
+</body>
+</html>
